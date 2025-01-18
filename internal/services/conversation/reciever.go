@@ -18,14 +18,14 @@ func NewConversationReceiver(db *gorm.DB, builder *ConversationBuilder, executor
 	return &ConversationReceiver{db: db, Builder: builder, Executor: executor, ConvState: state, HistoryLoader: historyLoader}
 }
 
-func (cr *ConversationReceiver) ReceiveMessage(sessionID uint, message string, messageType models.MessageType) (string, error) {
+func (cr *ConversationReceiver) ReceiveMessage(sessionID uint, message string, messageType models.MessageType, whatsapp bool) (string, error) {
 	conversation, err := cr.Builder.Build(sessionID)
 	if err != nil {
 		return "", err
 	}
 	convHistory, _ := cr.HistoryLoader.FetchHistory(conversation.ID)
 	cr.ConvState.InitState(conversation.ID, convHistory)
-	response, err := cr.Executor.Execute(conversation.ID, message, messageType, cr.ConvState)
+	response, err := cr.Executor.Execute(conversation.ID, message, messageType, cr.ConvState, whatsapp)
 	if err != nil {
 		return "", err
 	}

@@ -23,8 +23,8 @@ func NewConversationService(db *gorm.DB) *ConversationService {
 	}
 }
 
-func (cs *ConversationService) HandleSession(sessionID uint, userInput string, messageType models.MessageType) (string, error) {
-	return cs.Receiver.ReceiveMessage(sessionID, userInput, messageType)
+func (cs *ConversationService) HandleSession(sessionID uint, userInput string, messageType models.MessageType, whatsapp bool) (string, error) {
+	return cs.Receiver.ReceiveMessage(sessionID, userInput, messageType, whatsapp)
 }
 
 func (cs *ConversationService) GetSessionWithConversations(sessionID uint) (*models.Session, error) {

@@ -22,11 +22,14 @@ func StartConversationHandler(conversationService *conversation.ConversationServ
 			return
 		}
 
+		// Get the whatsapp parameter, default to false
+		whatsapp := c.DefaultQuery("whatsapp", "false") == "true"
+
 		// Here, we're using a hardcoded "Hello" message. In a real application, you'd likely get this from the request.
 		userInput := "Hello!"
 
 		// Handle the session/message using the ConversationService. Here, authUser.ID could be used to find or start a session.
-		response, err := conversationService.HandleSession(authSession.ID, userInput, models.MessageTypeUserFix)
+		response, err := conversationService.HandleSession(authSession.ID, userInput, models.MessageTypeUserFix, whatsapp)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return

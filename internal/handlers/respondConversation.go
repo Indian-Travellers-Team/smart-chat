@@ -31,9 +31,12 @@ func RespondConversationHandler(conversationService *conversation.ConversationSe
 
 		}
 
+		// Get the whatsapp parameter, default to false
+		whatsapp := c.DefaultQuery("whatsapp", "false") == "true"
+
 		userInput := jsonData.Message
 
-		response, err := conversationService.HandleSession(authSession.ID, userInput, models.MessageTypeUserSent)
+		response, err := conversationService.HandleSession(authSession.ID, userInput, models.MessageTypeUserSent, whatsapp)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return

@@ -3,10 +3,13 @@ package llm_service
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"smart-chat/config"
 	"smart-chat/internal/models"
+	"strings"
 
+	"github.com/jaytaylor/html2text"
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 )
@@ -147,6 +150,26 @@ func GetOpenAIResponsev2Whatsapp(messages []openai.ChatCompletionMessage) (model
 	if len(resp.Choices) == 0 || len(msg.Content) == 0 {
 		return models.MessageTypeUserSent, "Service currently unavailable", totalTokens, nil
 	}
+	var result map[string]interface{}
 
-	return models.MessageTypeUserSent, resp.Choices[0].Message.Content, totalTokens, nil
+	err = json.Unmarshal([]byte(resp.Choices[0].Message.Content), &result)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	markdown := result["content"].(string)
+	text, _ := html2text.FromString(string(markdown))
+
+	text = strings.ReplaceAll(text, "**", "*")
+	text = strings.ReplaceAll(text, "### ", "*")
+
+	result["content"] = text
+
+	var stringContent []byte
+
+	stringContent, err = json.Marshal(result)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return models.MessageTypeUserSent, string(stringContent), totalTokens, nil
 }

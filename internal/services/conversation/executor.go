@@ -159,11 +159,13 @@ func (ce *ConversationExecutor) updateConversation(conversationID uint, userInpu
 	return messagePair.ID, nil // Return the ID of the newly created message pair
 }
 
-func processFunctionResponse(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.PackageDetails, error) {
+func processFunctionResponse(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (interface{}, error) {
 	// Generalize the handling of function calls based on the function's name
 	switch toolCall.Function.Name {
 	case "get_package_details":
 		return handleGetPackageDetails(toolCall, db, conversationID, messageId)
+	case "create_user_initial_query":
+		return createUserInitialQuery(toolCall, db, conversationID, messageId)
 	// Add more cases as necessary for other function types
 	default:
 		log.Printf("Unhandled function call: %s", toolCall.Function.Name)

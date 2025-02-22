@@ -1,5 +1,21 @@
 package external
 
+// Struct for the request payload for the "create-user-initial-query" API
+type UserInitialQueryRequest struct {
+	ThreadID             string `json:"thread_id"`
+	Mobile               string `json:"mobile"`
+	NoOfPeople           int    `json:"no_of_people"`
+	PreferredDestination string `json:"preferred_destination"`
+	PreferredDate        string `json:"preferred_date"`
+}
+
+// Struct to handle the response from the "create-user-initial-query" API
+type UserInitialQueryResponse struct {
+	Message string `json:"message"`
+	Status  string `json:"status"`
+}
+
+// Struct to represent a package
 type Package struct {
 	ID                 int      `json:"id"`
 	Name               string   `json:"name"`
@@ -11,7 +27,7 @@ type Package struct {
 	UpcomingTripDates  []string `json:"upcoming_trip_dates"`
 }
 
-// PackageDetails struct to match the JSON structure of the package details API response
+// Struct to match the JSON structure of the package details API response
 type PackageDetails struct {
 	ID          int      `json:"id"`
 	Name        string   `json:"name"`
@@ -25,6 +41,7 @@ type PackageDetails struct {
 	PackageLink string   `json:"package_link"`
 }
 
+// Struct for costings inside a package details
 type Costings struct {
 	QuadSharingCost   float64 `json:"quad_sharing_cost"`
 	TripleSharingCost float64 `json:"triple_sharing_cost"`

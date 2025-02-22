@@ -58,3 +58,34 @@ func handleGetPackageDetails(toolCall openai.ToolCall, db *gorm.DB, conversation
 	// Return the package details directly
 	return packageDetails, nil
 }
+
+// New function to create user initial query by calling the external API
+func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
+	var args struct {
+		NoOfPeople           int    `json:"no_of_people"`
+		PreferredDestination string `json:"preferred_destination"`
+		PreferredDate        string `json:"preferred_date"`
+	}
+
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+		return "", err
+	}
+
+	var conversation models.Conversation
+	if err := db.Preload("Session.User").First(&conversation, conversationID).Error; err != nil {
+		log.Printf("Error fetching conversation details: %v", err)
+		return "", err
+	}
+	mobile := conversation.Session.User.Mobile
+
+	// Call the external API to create the user initial query
+	threadID := fmt.Sprintf("%v", conversationID)
+	response, err := external.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
+	if err != nil {
+		log.Printf("Error calling external API: %v", err)
+		return "", err
+	}
+
+	log.Printf("API response: %v", response.Message)
+	return "Success", nil
+}

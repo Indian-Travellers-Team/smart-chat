@@ -2,6 +2,7 @@ package llm_service
 
 import (
 	"fmt"
+	"log"
 	"smart-chat/external"
 	"strings"
 )
@@ -72,7 +73,8 @@ func SystemMessageTemplate(packages []external.Package) string {
 		`, packageListBuilder.String())
 }
 
-func SystemMessageTemplateForWhatsapp(packages []external.Package) string {
+// SystemMessageTemplateForWhatsapp formats a WhatsApp message based on the provided packages and workflowID.
+func SystemMessageTemplateForWhatsapp(packages []external.Package, workflowID int) string {
 	var packageListBuilder strings.Builder
 
 	for _, p := range packages {
@@ -80,6 +82,21 @@ func SystemMessageTemplateForWhatsapp(packages []external.Package) string {
 			p.Name, p.Duration, p.QuadSharingPrice, p.TripleSharingPrice, p.DoubleSharingPrice, p.PackageLink)
 		packageListBuilder.WriteString(packageDetails)
 	}
+
+	// Default value for workflowID is 1 if not provided
+	if workflowID == 0 {
+		workflowID = 1
+	}
+
+	// Call GetWorkflow to retrieve the workflow for the given workflowID
+	workflowResponse, err := external.GetWorkflow(workflowID)
+	if err != nil {
+		log.Printf("Error fetching workflow: %v", err)
+		return "Error fetching workflow details."
+	}
+
+	// Format the workflow data into the message
+	workflowData := formatWorkflow(workflowResponse)
 
 	return fmt.Sprintf(`
 		## Role and Expertise
@@ -90,19 +107,21 @@ func SystemMessageTemplateForWhatsapp(packages []external.Package) string {
 		## Goal 
 		Your goal is to help the user understand our offerings and inspire user to choose to trip with us.
 
+		## Workflow
+		%s
+
 		## Packages list 
 		%s
 
 		# Function
 		get_package_details : use this function to generate details such as itinerary, inclusion in the package,
 		exclusion in the package, cost for quad sharing, triple sharing and double sharing, for a particular package with id. 
-		 
+		
 		## Pricing
 		Quad sharing means 4 people sharing a room, Triple sharing is 3 people sharing a room, and double sharing is 2 people sharing a room.
 		Pricing is based on the above 3 categories.
 
-		## Step-by-step instructions
-		# Getting started on user helpdesk.
+		## Important Points
 		1. Greet the user warmly, introduce yourself as Musafir, and communicate in an engaging tone with emojis.
 		2. Help the user understand the packages Indian Travellers Team offer.
 		3. You always stay on topic, focusing solely on inspiring the user to go with one of our packages.
@@ -132,5 +151,38 @@ func SystemMessageTemplateForWhatsapp(packages []external.Package) string {
 		Always keep your answer short as your messages are being read on a mobile device usually.
 		You never talk about the Itinerary. Whenever you are asked about the itinerary - ask the user to check that in the link.
 		Always respond in plain text with Smileys, never in markdown
-		`, packageListBuilder.String())
+		`, workflowData, packageListBuilder.String())
+}
+
+// Helper function to format workflow data into a message
+func formatWorkflow(workflowResponse *external.WorkflowResponse) string {
+	// Type assert flow to the correct type
+	flow, ok := workflowResponse.Flow.(map[string]interface{})
+	if !ok {
+		log.Printf("Error asserting Flow to correct type")
+		return "Error processing workflow data."
+	}
+
+	// Extract and format the workflow description and states into a string
+	var workflowBuilder strings.Builder
+	workflowBuilder.WriteString(fmt.Sprintf("Workflow Name: %s\n", workflowResponse.Name))
+	workflowBuilder.WriteString(fmt.Sprintf("Description: %s\n", workflowResponse.Description))
+	workflowBuilder.WriteString("Initial State: " + flow["initial_state"].(string) + "\n")
+	workflowBuilder.WriteString("States:\n")
+
+	// Iterate through each state in the flow and append to the workflow message
+	states := flow["states"].(map[string]interface{})
+	for stateName, state := range states {
+		stateDetails := state.(map[string]interface{})
+		workflowBuilder.WriteString(fmt.Sprintf("\n- %s\n", stateName))
+		workflowBuilder.WriteString(fmt.Sprintf("  Description: %s\n", stateDetails["description"]))
+		actions := stateDetails["actions"].([]interface{})
+		for _, action := range actions {
+			actionDetails := action.(map[string]interface{})
+			workflowBuilder.WriteString(fmt.Sprintf("  - Next State: %s\n", actionDetails["next_state"]))
+			workflowBuilder.WriteString(fmt.Sprintf("    Description: %s\n", actionDetails["description"]))
+		}
+	}
+
+	return workflowBuilder.String()
 }

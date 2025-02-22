@@ -86,6 +86,58 @@ func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationI
 		return "", err
 	}
 
+	// Save the function call in the database
+	functionCall := models.FunctionCall{
+		ConversationID: conversationID,
+		MessageID:      messageId,
+		Name:           toolCall.Function.Name,
+		Args:           []byte(toolCall.Function.Arguments),
+	}
+	if createErr := db.Create(&functionCall).Error; createErr != nil {
+		return "success", createErr
+	}
+
 	log.Printf("API response: %v", response.Message)
 	return "Success", nil
+}
+
+// New function to create user final booking by calling the external API
+func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
+	var args struct {
+		TripID int `json:"trip"`
+	}
+
+	// Unmarshal the function arguments from the tool call
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+		return "", err
+	}
+
+	// Fetch mobile from the conversation session
+	var conversation models.Conversation
+	if err := db.Preload("Session.User").First(&conversation, conversationID).Error; err != nil {
+		log.Printf("Error fetching conversation details: %v", err)
+		return "", err
+	}
+
+	// Call the external API to create the final booking
+	threadID := fmt.Sprintf("%v", conversationID)
+	response, err := external.CreateUserFinalBooking(threadID, args.TripID)
+	if err != nil {
+		log.Printf("Error calling external API: %v", err)
+		return "", err
+	}
+
+	// Save the function call in the database
+	functionCall := models.FunctionCall{
+		ConversationID: conversationID,
+		MessageID:      messageId,
+		Name:           toolCall.Function.Name,
+		Args:           []byte(toolCall.Function.Arguments),
+	}
+	if createErr := db.Create(&functionCall).Error; createErr != nil {
+		return "success", createErr
+	}
+
+	// Return the API response message
+	return response.Message, nil
 }

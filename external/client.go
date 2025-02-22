@@ -58,7 +58,7 @@ func GetPackageDetails(packageID int) (*PackageDetails, error) {
 }
 
 // CreateUserInitialQuery makes a POST request to the external API to create a user initial query
-func CreateUserInitialQuery(threadID string, mobile string, noOfPeople int, preferredDestination string, preferredDate string) (*UserInitialQueryResponse, error) {
+func CreateUserInitialQuery(threadID string, mobile string, noOfPeople int, preferredDestination string, preferredDate string) (*ToolResponse, error) {
 	// Construct the request payload
 	requestPayload := UserInitialQueryRequest{
 		ThreadID:             threadID,
@@ -88,7 +88,43 @@ func CreateUserInitialQuery(threadID string, mobile string, noOfPeople int, pref
 	}
 
 	// Decode the response body
-	var response UserInitialQueryResponse
+	var response ToolResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("error decoding API response: %v", err)
+	}
+
+	return &response, nil
+}
+
+// CreateUserFinalBooking makes a POST request to the external API to create the user final booking
+func CreateUserFinalBooking(threadID string, tripID int) (*ToolResponse, error) {
+	// Construct the request payload
+	requestPayload := CreateUserFinalBookingRequest{
+		ThreadID: threadID,
+		TripID:   tripID,
+	}
+
+	// Marshal the payload into JSON
+	requestBody, err := json.Marshal(requestPayload)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling request payload: %v", err)
+	}
+
+	// Send POST request to the external API
+	apiURL := fmt.Sprintf("%s/agent/function/create-user-final-booking/", baseURL)
+	resp, err := httpClient.Post(apiURL, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, fmt.Errorf("error sending request to API: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if the response status is OK
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error in API response: status %v", resp.Status)
+	}
+
+	// Decode the response body
+	var response ToolResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("error decoding API response: %v", err)
 	}

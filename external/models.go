@@ -10,9 +10,15 @@ type UserInitialQueryRequest struct {
 }
 
 // Struct to handle the response from the "create-user-initial-query" API
-type UserInitialQueryResponse struct {
+type ToolResponse struct {
 	Message string `json:"message"`
 	Status  string `json:"status"`
+}
+
+// Struct for the request payload for the "create-user-final-booking" API
+type CreateUserFinalBookingRequest struct {
+	ThreadID string `json:"thread_id"` // The conversation ID (thread ID)
+	TripID   int    `json:"trip"`      // The trip ID
 }
 
 // Struct to represent a package

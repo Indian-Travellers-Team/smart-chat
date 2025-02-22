@@ -166,6 +166,8 @@ func processFunctionResponse(toolCall openai.ToolCall, db *gorm.DB, conversation
 		return handleGetPackageDetails(toolCall, db, conversationID, messageId)
 	case "create_user_initial_query":
 		return createUserInitialQuery(toolCall, db, conversationID, messageId)
+	case "create_user_final_booking":
+		return createUserFinalBooking(toolCall, db, conversationID, messageId)
 	// Add more cases as necessary for other function types
 	default:
 		log.Printf("Unhandled function call: %s", toolCall.Function.Name)

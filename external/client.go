@@ -177,5 +177,14 @@ func GetWorkflow(workflowID int) (*WorkflowResponse, error) {
 		return nil, fmt.Errorf("error decoding API response: %v", err)
 	}
 
+	// Type assert flow to the correct type
+	flow, ok := workflowResponse.Flow.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("error asserting Flow to correct type")
+	}
+
+	// Re-assign the fields from flow to the WorkflowResponse struct
+	workflowResponse.Flow = flow
+
 	return &workflowResponse, nil
 }

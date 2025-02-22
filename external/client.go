@@ -84,7 +84,7 @@ func CreateUserInitialQuery(threadID string, mobile string, noOfPeople int, pref
 	defer resp.Body.Close()
 
 	// Check if the response status is OK
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("error in API response: status %v", resp.Status)
 	}
 
@@ -120,7 +120,7 @@ func CreateUserFinalBooking(threadID string, tripID int) (*ToolResponse, error) 
 	defer resp.Body.Close()
 
 	// Check if the response status is OK
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("error in API response: status %v", resp.Status)
 	}
 

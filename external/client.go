@@ -155,3 +155,27 @@ func GetUpcomingTrips(packageID int) (*UpcomingTripsResponse, error) {
 
 	return &upcomingTrips, nil
 }
+
+// GetWorkflow fetches the workflow details for a given workflow ID
+func GetWorkflow(workflowID int) (*WorkflowResponse, error) {
+	// Send GET request to fetch the workflow details for the given workflow ID
+	apiURL := fmt.Sprintf("%s/agent/workflow/%d/", baseURL, workflowID)
+	resp, err := httpClient.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("error sending GET request to API: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if the response status is OK
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error in API response: status %v", resp.Status)
+	}
+
+	// Decode the response body into a WorkflowResponse
+	var workflowResponse WorkflowResponse
+	if err := json.NewDecoder(resp.Body).Decode(&workflowResponse); err != nil {
+		return nil, fmt.Errorf("error decoding API response: %v", err)
+	}
+
+	return &workflowResponse, nil
+}

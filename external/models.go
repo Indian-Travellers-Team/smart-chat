@@ -67,3 +67,35 @@ type UpcomingTrip struct {
 
 // UpcomingTripsResponse represents the response structure from the upcoming trips API
 type UpcomingTripsResponse []UpcomingTrip
+
+// WorkflowState represents each state in the workflow
+type WorkflowState struct {
+	Description string `json:"description"`
+	Actions     []struct {
+		NextState   string `json:"next_state"`
+		Description string `json:"description"`
+	} `json:"actions"`
+}
+
+// Workflow represents the structure of the entire workflow
+type Workflow struct {
+	ID          int    `json:"id"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Flow        struct {
+		States       map[string]WorkflowState `json:"states"`
+		Description  string                   `json:"description"`
+		InitialState string                   `json:"initial_state"`
+		WorkflowName string                   `json:"workflow_name"`
+	} `json:"flow"`
+	Active bool `json:"active"`
+}
+
+// WorkflowResponse represents the response structure from the workflow API
+type WorkflowResponse struct {
+	ID          int         `json:"id"`
+	Description string      `json:"description"`
+	Name        string      `json:"name"`
+	Flow        interface{} `json:"flow"`
+	Active      bool        `json:"active"`
+}

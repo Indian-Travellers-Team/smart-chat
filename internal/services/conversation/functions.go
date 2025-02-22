@@ -58,3 +58,119 @@ func handleGetPackageDetails(toolCall openai.ToolCall, db *gorm.DB, conversation
 	// Return the package details directly
 	return packageDetails, nil
 }
+
+// New function to create user initial query by calling the external API
+func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
+	var args struct {
+		NoOfPeople           int    `json:"no_of_people"`
+		PreferredDestination string `json:"preferred_destination"`
+		PreferredDate        string `json:"preferred_date"`
+	}
+
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+		return "", err
+	}
+
+	var conversation models.Conversation
+	if err := db.Preload("Session.User").First(&conversation, conversationID).Error; err != nil {
+		log.Printf("Error fetching conversation details: %v", err)
+		return "", err
+	}
+	mobile := conversation.Session.User.Mobile
+
+	// Call the external API to create the user initial query
+	threadID := fmt.Sprintf("%v", conversationID)
+	response, err := external.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
+	if err != nil {
+		log.Printf("Error calling external API: %v", err)
+		return "", err
+	}
+
+	// Save the function call in the database
+	functionCall := models.FunctionCall{
+		ConversationID: conversationID,
+		MessageID:      messageId,
+		Name:           toolCall.Function.Name,
+		Args:           []byte(toolCall.Function.Arguments),
+	}
+	if createErr := db.Create(&functionCall).Error; createErr != nil {
+		return "success", createErr
+	}
+
+	log.Printf("API response: %v", response.Message)
+	return "Success", nil
+}
+
+// New function to create user final booking by calling the external API
+func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
+	var args struct {
+		TripID int `json:"trip"`
+	}
+
+	// Unmarshal the function arguments from the tool call
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+		return "", err
+	}
+
+	// Fetch mobile from the conversation session
+	var conversation models.Conversation
+	if err := db.Preload("Session.User").First(&conversation, conversationID).Error; err != nil {
+		log.Printf("Error fetching conversation details: %v", err)
+		return "", err
+	}
+
+	// Call the external API to create the final booking
+	threadID := fmt.Sprintf("%v", conversationID)
+	response, err := external.CreateUserFinalBooking(threadID, args.TripID)
+	if err != nil {
+		log.Printf("Error calling external API: %v", err)
+		return "", err
+	}
+
+	// Save the function call in the database
+	functionCall := models.FunctionCall{
+		ConversationID: conversationID,
+		MessageID:      messageId,
+		Name:           toolCall.Function.Name,
+		Args:           []byte(toolCall.Function.Arguments),
+	}
+	if createErr := db.Create(&functionCall).Error; createErr != nil {
+		return "success", createErr
+	}
+
+	// Return the API response message
+	return response.Message, nil
+}
+
+// New function to fetch upcoming trips for a given package ID
+func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.UpcomingTripsResponse, error) {
+	var args struct {
+		PackageID int `json:"package_id"`
+	}
+
+	// Unmarshal the function arguments from the tool call
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+		return nil, err
+	}
+
+	// Fetch the upcoming trips from the external service
+	upcomingTrips, err := external.GetUpcomingTrips(args.PackageID)
+	if err != nil {
+		log.Printf("Error fetching upcoming trips: %v", err)
+		return nil, err
+	}
+
+	// Save the function call in the database
+	functionCall := models.FunctionCall{
+		ConversationID: conversationID,
+		MessageID:      messageId,
+		Name:           toolCall.Function.Name,
+		Args:           []byte(toolCall.Function.Arguments),
+	}
+	if createErr := db.Create(&functionCall).Error; createErr != nil {
+		return nil, createErr
+	}
+
+	// Return the upcoming trips response
+	return upcomingTrips, nil
+}

@@ -101,9 +101,9 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 func (ce *ConversationExecutor) prepareMessages(history []openai.ChatCompletionMessage, packages []external.Package, userInput string, whatsapp bool) []openai.ChatCompletionMessage {
 	var systemTemplate string
 	if whatsapp {
-		systemTemplate = llm_service.SystemMessageTemplate(packages)
+		systemTemplate = llm_service.SystemMessageTemplateForWhatsapp(packages, 1)
 	} else {
-		systemTemplate = llm_service.SystemMessageTemplateForWhatsapp(packages)
+		systemTemplate = llm_service.SystemMessageTemplate(packages)
 	}
 	messages := append([]openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleSystem, Content: systemTemplate}}, history...)
 	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: userInput})
@@ -159,11 +159,17 @@ func (ce *ConversationExecutor) updateConversation(conversationID uint, userInpu
 	return messagePair.ID, nil // Return the ID of the newly created message pair
 }
 
-func processFunctionResponse(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.PackageDetails, error) {
+func processFunctionResponse(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (interface{}, error) {
 	// Generalize the handling of function calls based on the function's name
 	switch toolCall.Function.Name {
 	case "get_package_details":
 		return handleGetPackageDetails(toolCall, db, conversationID, messageId)
+	case "create_user_initial_query":
+		return createUserInitialQuery(toolCall, db, conversationID, messageId)
+	case "create_user_final_booking":
+		return createUserFinalBooking(toolCall, db, conversationID, messageId)
+	case "fetch_upcoming_trips":
+		return fetchUpcomingTrips(toolCall, db, conversationID, messageId)
 	// Add more cases as necessary for other function types
 	default:
 		log.Printf("Unhandled function call: %s", toolCall.Function.Name)

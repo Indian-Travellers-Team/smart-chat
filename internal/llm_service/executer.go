@@ -110,6 +110,9 @@ func GetOpenAIResponsev2Whatsapp(messages []openai.ChatCompletionMessage) (model
 	ctx := context.Background()
 	var tools = []openai.Tool{
 		{Type: "function", Function: GetPackageDetailsSchema},
+		{Type: "function", Function: CreateUserInitialQuerySchema},
+		{Type: "function", Function: CreateUserFinalBookingSchema},
+		{Type: "function", Function: FetchUpcomingTripsSchema},
 	}
 
 	// Define the schema for the response

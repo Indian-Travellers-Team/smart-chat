@@ -101,9 +101,9 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 func (ce *ConversationExecutor) prepareMessages(history []openai.ChatCompletionMessage, packages []external.Package, userInput string, whatsapp bool) []openai.ChatCompletionMessage {
 	var systemTemplate string
 	if whatsapp {
-		systemTemplate = llm_service.SystemMessageTemplate(packages)
-	} else {
 		systemTemplate = llm_service.SystemMessageTemplateForWhatsapp(packages, 1)
+	} else {
+		systemTemplate = llm_service.SystemMessageTemplate(packages)
 	}
 	messages := append([]openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleSystem, Content: systemTemplate}}, history...)
 	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: userInput})

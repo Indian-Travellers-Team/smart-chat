@@ -10,7 +10,7 @@ import (
 
 // var baseURL = "https://indiantravellersteam.in/api"
 
-var baseURL = "http://localhost:8000/api"
+var baseURL = "http://127.0.0.1:8000/api"
 
 // httpClient initializes a new HTTP client with a timeout
 var httpClient = &http.Client{
@@ -19,7 +19,8 @@ var httpClient = &http.Client{
 
 // GetPackageList fetches the list of packages from the external API
 func GetPackageList() ([]Package, error) {
-	resp, err := httpClient.Get(fmt.Sprintf("%s/packages", baseURL))
+	url := fmt.Sprintf("%s/packages", baseURL)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}

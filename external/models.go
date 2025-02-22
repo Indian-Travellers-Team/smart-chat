@@ -53,3 +53,17 @@ type Costings struct {
 	TripleSharingCost float64 `json:"triple_sharing_cost"`
 	DoubleSharingCost float64 `json:"double_sharing_cost"`
 }
+
+// UpcomingTrip represents the structure of a single upcoming trip for a package
+type UpcomingTrip struct {
+	ID             int     `json:"id"`
+	PackageID      int     `json:"package"`
+	StartDate      string  `json:"start_date"`
+	EndDate        string  `json:"end_date"`
+	TotalDays      int     `json:"total_days"`
+	AdvancePayment float64 `json:"advance_payment"`
+	Discount       float64 `json:"discount"`
+}
+
+// UpcomingTripsResponse represents the response structure from the upcoming trips API
+type UpcomingTripsResponse []UpcomingTrip

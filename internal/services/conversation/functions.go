@@ -141,3 +141,36 @@ func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationI
 	// Return the API response message
 	return response.Message, nil
 }
+
+// New function to fetch upcoming trips for a given package ID
+func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.UpcomingTripsResponse, error) {
+	var args struct {
+		PackageID int `json:"package_id"`
+	}
+
+	// Unmarshal the function arguments from the tool call
+	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
+		return nil, err
+	}
+
+	// Fetch the upcoming trips from the external service
+	upcomingTrips, err := external.GetUpcomingTrips(args.PackageID)
+	if err != nil {
+		log.Printf("Error fetching upcoming trips: %v", err)
+		return nil, err
+	}
+
+	// Save the function call in the database
+	functionCall := models.FunctionCall{
+		ConversationID: conversationID,
+		MessageID:      messageId,
+		Name:           toolCall.Function.Name,
+		Args:           []byte(toolCall.Function.Arguments),
+	}
+	if createErr := db.Create(&functionCall).Error; createErr != nil {
+		return nil, createErr
+	}
+
+	// Return the upcoming trips response
+	return upcomingTrips, nil
+}

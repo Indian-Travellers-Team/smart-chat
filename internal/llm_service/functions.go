@@ -60,3 +60,19 @@ var CreateUserFinalBookingSchema = &openai.FunctionDefinition{
 		Required: []string{"trip_id"},
 	},
 }
+
+// Define the schema for the upcoming trips query
+var FetchUpcomingTripsSchema = &openai.FunctionDefinition{
+	Name:        "fetch_upcoming_trips",
+	Description: "Fetch the upcoming trips for a specific package by its ID",
+	Parameters: jsonschema.Definition{
+		Type: jsonschema.Object,
+		Properties: map[string]jsonschema.Definition{
+			"package_id": {
+				Type:        jsonschema.Integer,
+				Description: "The unique identifier for the package to fetch upcoming trips",
+			},
+		},
+		Required: []string{"package_id"},
+	},
+}

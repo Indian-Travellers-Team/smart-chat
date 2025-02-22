@@ -131,3 +131,27 @@ func CreateUserFinalBooking(threadID string, tripID int) (*ToolResponse, error) 
 
 	return &response, nil
 }
+
+// GetUpcomingTrips fetches the upcoming trips for a specific package by its ID
+func GetUpcomingTrips(packageID int) (*UpcomingTripsResponse, error) {
+	// Send GET request to fetch the upcoming trips for the given package ID
+	apiURL := fmt.Sprintf("%s/v1/web/upcoming-trips/%d/", baseURL, packageID)
+	resp, err := httpClient.Get(apiURL)
+	if err != nil {
+		return nil, fmt.Errorf("error sending GET request to API: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check if the response status is OK
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("error in API response: status %v", resp.Status)
+	}
+
+	// Decode the response body into a slice of UpcomingTripsResponse
+	var upcomingTrips UpcomingTripsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&upcomingTrips); err != nil {
+		return nil, fmt.Errorf("error decoding API response: %v", err)
+	}
+
+	return &upcomingTrips, nil
+}

@@ -92,7 +92,7 @@ func GetConversationSummary(conversation models.Conversation) (string, error) {
 	// Make the OpenAI request to generate a conversation summary
 	ctx := context.Background()
 	req := openai.ChatCompletionRequest{
-		Model:    openai.GPT4,
+		Model:    openai.GPT4oMini,
 		Messages: messages,
 	}
 	resp, err := client.CreateChatCompletion(ctx, req)

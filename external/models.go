@@ -57,7 +57,7 @@ type Costings struct {
 // UpcomingTrip represents the structure of a single upcoming trip for a package
 type UpcomingTrip struct {
 	ID             int     `json:"id"`
-	PackageID      int     `json:"package"`
+	Package        int     `json:"package"`
 	StartDate      string  `json:"start_date"`
 	EndDate        string  `json:"end_date"`
 	TotalDays      int     `json:"total_days"`
@@ -67,6 +67,20 @@ type UpcomingTrip struct {
 
 // UpcomingTripsResponse represents the response structure from the upcoming trips API
 type UpcomingTripsResponse []UpcomingTrip
+
+// UpcomingTripInternal represents the structure of a single upcoming trip for a package (internal version)
+type UpcomingTripInternal struct {
+	TripID         int     `json:"trip_id"`
+	Package        int     `json:"package"`
+	StartDate      string  `json:"start_date"`
+	EndDate        string  `json:"end_date"`
+	TotalDays      int     `json:"total_days"`
+	AdvancePayment float64 `json:"advance_payment"`
+	Discount       float64 `json:"discount"`
+}
+
+// UpcomingTripsResponseInternal represents the response structure from the upcoming trips API (internal)
+type UpcomingTripsResponseInternal []UpcomingTripInternal
 
 // WorkflowState represents each state in the workflow
 type WorkflowState struct {

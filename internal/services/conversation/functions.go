@@ -50,6 +50,10 @@ func handleGetPackageDetails(toolCall openai.ToolCall, db *gorm.DB, conversation
 		MessageID:      messageId,
 		Name:           toolCall.Function.Name,
 		Args:           []byte(toolCall.Function.Arguments),
+		FunctionResponse: func() string {
+			response, _ := json.Marshal(packageDetails)
+			return string(response)
+		}(),
 	}
 	if createErr := db.Create(&functionCall).Error; createErr != nil {
 		return nil, createErr
@@ -80,11 +84,15 @@ func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationI
 
 	// Call the external API to create the user initial query
 	threadID := fmt.Sprintf("%v", conversationID)
-	response, err := external.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
+	_, err := external.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
 	if err != nil {
 		log.Printf("Error calling external API: %v", err)
 		return "", err
 	}
+
+	// Prepare message for LLM response
+	llmMessage := fmt.Sprintf("The query has been created for %d people, with preferred destination: %s, and preferred date: %s",
+		args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
 
 	// Save the function call in the database
 	functionCall := models.FunctionCall{
@@ -92,13 +100,16 @@ func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationI
 		MessageID:      messageId,
 		Name:           toolCall.Function.Name,
 		Args:           []byte(toolCall.Function.Arguments),
+		FunctionResponse: func() string {
+			response, _ := json.Marshal(llmMessage)
+			return string(response)
+		}(),
 	}
 	if createErr := db.Create(&functionCall).Error; createErr != nil {
-		return "success", createErr
+		return "error", createErr
 	}
-
-	log.Printf("API response: %v", response.Message)
-	return "Success", nil
+	// Return the formatted message in JSON format
+	return fmt.Sprintf(`{"ResponseToLLM": "%s"}`, llmMessage), nil
 }
 
 // New function to create user final booking by calling the external API
@@ -121,11 +132,14 @@ func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationI
 
 	// Call the external API to create the final booking
 	threadID := fmt.Sprintf("%v", conversationID)
-	response, err := external.CreateUserFinalBooking(threadID, args.TripID)
+	_, err := external.CreateUserFinalBooking(threadID, args.TripID)
 	if err != nil {
 		log.Printf("Error calling external API: %v", err)
 		return "", err
 	}
+
+	// Prepare message for LLM response
+	llmMessage := fmt.Sprintf("The final booking has been created for Trip ID: %d", args.TripID)
 
 	// Save the function call in the database
 	functionCall := models.FunctionCall{
@@ -133,17 +147,21 @@ func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationI
 		MessageID:      messageId,
 		Name:           toolCall.Function.Name,
 		Args:           []byte(toolCall.Function.Arguments),
+		FunctionResponse: func() string {
+			response, _ := json.Marshal(llmMessage)
+			return string(response)
+		}(),
 	}
 	if createErr := db.Create(&functionCall).Error; createErr != nil {
 		return "success", createErr
 	}
 
-	// Return the API response message
-	return response.Message, nil
+	// Return the formatted message in JSON format
+	return fmt.Sprintf(`{"ResponseToLLM": "%s"}`, llmMessage), nil
 }
 
 // New function to fetch upcoming trips for a given package ID
-func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.UpcomingTripsResponse, error) {
+func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.UpcomingTripsResponseInternal, error) {
 	var args struct {
 		PackageID int `json:"package_id"`
 	}
@@ -166,6 +184,10 @@ func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID ui
 		MessageID:      messageId,
 		Name:           toolCall.Function.Name,
 		Args:           []byte(toolCall.Function.Arguments),
+		FunctionResponse: func() string {
+			response, _ := json.Marshal(upcomingTrips)
+			return string(response)
+		}(),
 	}
 	if createErr := db.Create(&functionCall).Error; createErr != nil {
 		return nil, createErr

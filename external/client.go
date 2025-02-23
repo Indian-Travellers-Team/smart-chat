@@ -134,7 +134,7 @@ func CreateUserFinalBooking(threadID string, tripID int) (*ToolResponse, error) 
 }
 
 // GetUpcomingTrips fetches the upcoming trips for a specific package by its ID
-func GetUpcomingTrips(packageID int) (*UpcomingTripsResponse, error) {
+func GetUpcomingTrips(packageID int) (*UpcomingTripsResponseInternal, error) {
 	// Send GET request to fetch the upcoming trips for the given package ID
 	apiURL := fmt.Sprintf("%s/v1/web/upcoming-trips/%d/", baseURL, packageID)
 	resp, err := httpClient.Get(apiURL)
@@ -148,13 +148,28 @@ func GetUpcomingTrips(packageID int) (*UpcomingTripsResponse, error) {
 		return nil, fmt.Errorf("error in API response: status %v", resp.Status)
 	}
 
-	// Decode the response body into a slice of UpcomingTripsResponse
+	// Decode the response body into a slice of UpcomingTripsResponse (external version)
 	var upcomingTrips UpcomingTripsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&upcomingTrips); err != nil {
 		return nil, fmt.Errorf("error decoding API response: %v", err)
 	}
 
-	return &upcomingTrips, nil
+	// Map 'id' to 'trip_id' and convert the response
+	var internalTrips UpcomingTripsResponseInternal
+	for _, trip := range upcomingTrips {
+		internalTrips = append(internalTrips, UpcomingTripInternal{
+			TripID:         trip.ID,
+			Package:        trip.Package,
+			StartDate:      trip.StartDate,
+			EndDate:        trip.EndDate,
+			TotalDays:      trip.TotalDays,
+			AdvancePayment: trip.AdvancePayment,
+			Discount:       trip.Discount,
+		})
+	}
+
+	// Return the internal response
+	return &internalTrips, nil
 }
 
 // GetWorkflow fetches the workflow details for a given workflow ID

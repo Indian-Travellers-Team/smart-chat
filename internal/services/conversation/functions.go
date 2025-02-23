@@ -115,7 +115,7 @@ func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationI
 // New function to create user final booking by calling the external API
 func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
 	var args struct {
-		TripID int `json:"trip"`
+		TripID int `json:"trip_id"`
 	}
 
 	// Unmarshal the function arguments from the tool call

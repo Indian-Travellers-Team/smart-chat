@@ -54,7 +54,7 @@ var CreateUserFinalBookingSchema = &openai.FunctionDefinition{
 		Properties: map[string]jsonschema.Definition{
 			"trip_id": {
 				Type:        jsonschema.Integer,
-				Description: "The unique identifier for the trip",
+				Description: "The unique identifier for the trip provided by fetch_upcoming_trips function",
 			},
 		},
 		Required: []string{"trip_id"},

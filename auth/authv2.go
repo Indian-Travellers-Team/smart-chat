@@ -77,7 +77,7 @@ func (s *AuthV2Service) NewLoginWA(info UserLoginInfoWA) (gin.H, error) {
 
 	// Update user with the generated access token and set its expiration time
 	user.AccessToken = accessToken
-	user.AccessExpireAt = time.Now().Add(1 * time.Hour)
+	user.AccessExpireAt = time.Now().Add(7 * 24 * time.Hour)
 
 	// Save the user with the updated access token
 	if err := s.DB.Save(&user).Error; err != nil {

@@ -8,9 +8,7 @@ import (
 	"time"
 )
 
-// var baseURL = "https://indiantravellersteam.in/api"
-
-var baseURL = "http://127.0.0.1:8000/api"
+var baseURL = "https://indiantravellersteam.in/api"
 
 // httpClient initializes a new HTTP client with a timeout
 var httpClient = &http.Client{

@@ -12,7 +12,7 @@ func StartCronJobs(db *gorm.DB) {
 	c := cron.New()
 
 	// Add the conversation analysis job that runs every minute
-	_, err := c.AddFunc("*/1 * * * *", func() {
+	_, err := c.AddFunc("*/10 * * * *", func() {
 		log.Println("Starting conversation analysis job...")
 		GenerateConversationAnalysis(db)
 	})
@@ -27,7 +27,7 @@ func StartCronJobs(db *gorm.DB) {
 		"bhartendumehta206@gmail.com",
 	}
 
-	_, err = c.AddFunc("*/1 * * * *", func() {
+	_, err = c.AddFunc("*/10 * * * *", func() {
 		log.Println("Starting email notification job...")
 		EmailNotificationJob(db, recipients)
 	})

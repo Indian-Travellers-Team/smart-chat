@@ -20,6 +20,11 @@ type UserLoginInfoWA struct {
 	SecretToken string `json:"secret_token" binding:"required"`
 }
 
+type RefreshTokenInfo struct {
+	Mobile      string `json:"mobile" binding:"required"`
+	SecretToken string `json:"secret_token" binding:"required"`
+}
+
 type AuthV2Service struct {
 	DB             *gorm.DB
 	Fast2SMSAPIKey string
@@ -214,4 +219,35 @@ func (s *AuthV2Service) sendOTPMessage(mobile, otp string) error {
 	}
 
 	return nil
+}
+
+func (s *AuthV2Service) RefreshToken(info RefreshTokenInfo, accessToken string) (gin.H, error) {
+	if info.SecretToken != s.SecretToken {
+		return gin.H{"error": "Invalid secret token", "success": false}, errors.New("invalid secret token")
+	}
+	var session models.Session
+	result := s.DB.Where("auth_token = ?", accessToken).First(&session)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			log.Println("Session not found for token:", accessToken)
+			return gin.H{"error": "session not found"}, result.Error
+		} else {
+			log.Println("Database error:", result.Error)
+			return gin.H{"error": "internal server error"}, result.Error
+		}
+	}
+	if time.Now().After(session.ExpireAt) {
+		log.Println("Session expired for user:", session.User.ID)
+		authToken, err := generateSecretToken(32)
+		if err != nil {
+			return gin.H{"error": "Failed to generate session token"}, err
+		}
+		session.AuthToken = authToken
+		session.ExpireAt = time.Now().Add(7 * 24 * time.Hour)
+		if err := s.DB.Save(&session).Error; err != nil {
+			return gin.H{"error": "Failed to update session"}, err
+		}
+		return gin.H{"accessToken": authToken, "success": true}, nil
+	}
+	return gin.H{"error": "session not expired"}, nil
 }

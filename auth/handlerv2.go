@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,30 @@ func InitLoginHandlerv2(authService *AuthV2Service) gin.HandlerFunc {
 		token, err := authService.InitLogin(info)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to initiate login"})
+			return
+		}
+
+		c.JSON(http.StatusOK, token)
+	}
+}
+
+func WARefreshTokenHandler(authService *AuthV2Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var info RefreshTokenInfo
+		if err := c.ShouldBindJSON(&info); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+			return
+		}
+		accessToken := c.GetHeader("Authorization")
+		if accessToken == "" {
+			log.Println("Authorization header missing")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization Required"})
+			c.Abort()
+			return
+		}
+		token, err := authService.RefreshToken(info, accessToken)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to login"})
 			return
 		}
 

@@ -14,4 +14,5 @@ func RegisterV2AuthRoutes(group *gin.RouterGroup, authService *AuthV2Service) {
 	group.POST("/init-login", InitLoginHandlerv2(authService))
 	group.POST("/validate-login", ValidateLoginHandlerv2(authService))
 	group.POST("/login-for-whatsapp", WALoginHandler(authService))
+	group.POST("/refresh-token", WARefreshTokenHandler(authService))
 }

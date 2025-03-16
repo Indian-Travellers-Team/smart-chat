@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"smart-chat/config"
+	"smart-chat/internal/constants"
 	"smart-chat/internal/models"
 	"time"
 
@@ -93,6 +94,7 @@ func (s *AuthV2Service) NewLoginWA(info UserLoginInfoWA) (gin.H, error) {
 	session := models.Session{
 		UserID:    user.ID,
 		AuthToken: accessToken,
+		Source:    constants.WhatsAppSource,
 		ExpireAt:  time.Now().Add(1 * time.Hour),
 	}
 
@@ -164,6 +166,7 @@ func (s *AuthV2Service) ValidateLogin(accessToken, otp string) (gin.H, error) {
 	session := models.Session{
 		UserID:    user.ID,
 		AuthToken: authToken,
+		Source:    constants.WebsiteSource,
 		ExpireAt:  time.Now().Add(1 * time.Hour),
 	}
 

@@ -22,5 +22,6 @@ type Session struct {
 	User          User   `gorm:"foreignKey:UserID;references:ID"`
 	AuthToken     string `gorm:"type:varchar(255)"`
 	ExpireAt      time.Time
+	Source        string         `gorm:"type:varchar(15);default:'website'"`
 	Conversations []Conversation `gorm:"foreignKey:SessionID;"`
 }

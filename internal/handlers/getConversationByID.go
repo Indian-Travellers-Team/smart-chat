@@ -23,7 +23,9 @@ func GetConversationByIDHandler(historyService *convHistory.ConvHistoryService) 
 
 		// Create specification for fetching by ID.
 		idSpec := specification.ByID{ID: uint(id)}
-		conversations, err := historyService.GetConversations(idSpec)
+
+		// Since we only want one conversation, pass offset=0 and limit=1.
+		conversations, err := historyService.GetConversations(0, 1, idSpec)
 		if err != nil {
 			log.Printf("Error fetching conversations: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching conversation history"})
@@ -35,7 +37,6 @@ func GetConversationByIDHandler(historyService *convHistory.ConvHistoryService) 
 			return
 		}
 
-		// Assuming a single conversation is fetched by ID.
 		conversation := conversations[0]
 		formattedHistory := make([]gin.H, 0)
 		for _, messagePair := range conversation.MessagePairs {

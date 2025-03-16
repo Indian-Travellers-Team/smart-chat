@@ -84,6 +84,7 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 				"createdAt": conv.CreatedAt.Format(time.RFC3339),
 				"username":  conv.Session.User.Name,
 				"mobile":    conv.Session.User.Mobile,
+				"source":    conv.Session.Source,
 			})
 		}
 

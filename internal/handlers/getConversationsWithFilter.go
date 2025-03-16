@@ -14,10 +14,10 @@ import (
 // GetConversationsWithFiltersHandler fetches conversations with optional filters and pagination.
 func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1. Handle optional date range filters
-		startDateStr, endDateStr := c.Query("startdate"), c.Query("enddate")
 		var specs []specification.Specification
 
+		// 1. Handle optional date range filters.
+		startDateStr, endDateStr := c.Query("startdate"), c.Query("enddate")
 		if startDateStr != "" && endDateStr != "" {
 			startDate, err := time.Parse("02-01-2006", startDateStr)
 			if err != nil {
@@ -37,8 +37,12 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 			})
 		}
 
-		// 2. Read pagination parameters
-		//    Defaults: page=1, limit=20
+		// 2. Handle mobile filter.
+		if mobile := c.Query("mobile"); mobile != "" {
+			specs = append(specs, specification.ByMobile{Mobile: mobile})
+		}
+
+		// 3. Read pagination parameters (defaults: page=1, limit=20).
 		pageStr := c.DefaultQuery("page", "1")
 		limitStr := c.DefaultQuery("limit", "20")
 
@@ -54,7 +58,7 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 
 		offset := (page - 1) * limit
 
-		// 3. Fetch total count (optional but recommended for pagination metadata)
+		// 4. Fetch total count (for pagination metadata).
 		total, err := historyService.CountConversations(specs...)
 		if err != nil {
 			log.Printf("Error counting conversations: %v", err)
@@ -62,7 +66,7 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 			return
 		}
 
-		// 4. Fetch the paginated conversations
+		// 5. Fetch the paginated conversations.
 		conversations, err := historyService.GetConversations(offset, limit, specs...)
 		if err != nil {
 			log.Printf("Error fetching conversations: %v", err)
@@ -70,7 +74,7 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 			return
 		}
 
-		// 5. Format the response
+		// 6. Format the response.
 		formattedConversations := make([]gin.H, 0, len(conversations))
 		for _, conv := range conversations {
 			formattedConversations = append(formattedConversations, gin.H{
@@ -81,7 +85,7 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 			})
 		}
 
-		// 6. Return conversations plus pagination info
+		// 7. Return conversations plus pagination info.
 		c.JSON(http.StatusOK, gin.H{
 			"conversations": formattedConversations,
 			"pagination": gin.H{

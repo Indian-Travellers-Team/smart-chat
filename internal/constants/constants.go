@@ -13,4 +13,8 @@ const (
 	// Error messages.
 	ErrInvalidStartDate = "Invalid start date format"
 	ErrInvalidEndDate   = "Invalid end date format"
+
+	WhatsAppSource = "whatsapp"
+
+	WebsiteSource = "website"
 )

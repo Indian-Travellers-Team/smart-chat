@@ -3,10 +3,12 @@ package handlers
 import (
 	"log"
 	"net/http"
-	convHistory "smart-chat/internal/services/conversation_history"
-	"smart-chat/internal/services/conversation_history/specification"
 	"strconv"
 	"time"
+
+	"smart-chat/internal/constants"
+	convHistory "smart-chat/internal/services/conversation_history"
+	"smart-chat/internal/services/conversation_history/specification"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,15 +21,15 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 		// 1. Handle optional date range filters.
 		startDateStr, endDateStr := c.Query("startdate"), c.Query("enddate")
 		if startDateStr != "" && endDateStr != "" {
-			startDate, err := time.Parse("02-01-2006", startDateStr)
+			startDate, err := time.Parse(constants.DateFormat, startDateStr)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date format"})
+				c.JSON(http.StatusBadRequest, gin.H{"error": constants.ErrInvalidStartDate})
 				return
 			}
 
-			endDate, err := time.Parse("02-01-2006", endDateStr)
+			endDate, err := time.Parse(constants.DateFormat, endDateStr)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date format"})
+				c.JSON(http.StatusBadRequest, gin.H{"error": constants.ErrInvalidEndDate})
 				return
 			}
 
@@ -43,17 +45,17 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 		}
 
 		// 3. Read pagination parameters (defaults: page=1, limit=20).
-		pageStr := c.DefaultQuery("page", "1")
-		limitStr := c.DefaultQuery("limit", "20")
+		pageStr := c.DefaultQuery("page", constants.DefaultPageStr)
+		limitStr := c.DefaultQuery("limit", constants.DefaultLimitStr)
 
 		page, err := strconv.Atoi(pageStr)
 		if err != nil || page < 1 {
-			page = 1
+			page = constants.DefaultPage
 		}
 
 		limit, err := strconv.Atoi(limitStr)
 		if err != nil || limit < 1 {
-			limit = 20
+			limit = constants.DefaultLimit
 		}
 
 		offset := (page - 1) * limit

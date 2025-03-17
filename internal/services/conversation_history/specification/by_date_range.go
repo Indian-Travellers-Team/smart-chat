@@ -12,5 +12,5 @@ type ByDateRange struct {
 }
 
 func (spec ByDateRange) Apply(db *gorm.DB) *gorm.DB {
-	return db.Where("created_at >= ? AND created_at <= ?", spec.StartDate, spec.EndDate)
+	return db.Where("sessions.created_at >= ? AND sessions.created_at <= ?", spec.StartDate, spec.EndDate)
 }

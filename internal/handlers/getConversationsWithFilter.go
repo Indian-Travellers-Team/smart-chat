@@ -18,11 +18,6 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 	return func(c *gin.Context) {
 		var specs []specification.Specification
 
-		// 2. Handle mobile filter.
-		if mobile := c.Query("mobile"); mobile != "" {
-			specs = append(specs, specification.ByMobile{Mobile: mobile})
-		}
-
 		// 1. Handle optional date range filters.
 		startDateStr, endDateStr := c.Query("startdate"), c.Query("enddate")
 		if startDateStr != "" && endDateStr != "" {
@@ -42,6 +37,11 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 				StartDate: startDate,
 				EndDate:   endDate,
 			})
+		}
+
+		// 2. Handle mobile filter.
+		if mobile := c.Query("mobile"); mobile != "" {
+			specs = append(specs, specification.ByMobile{Mobile: mobile})
 		}
 
 		// 3. Read pagination parameters (defaults: page=1, limit=20).

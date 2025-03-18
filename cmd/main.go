@@ -15,6 +15,7 @@ import (
 	"smart-chat/internal/routes"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
+	userService "smart-chat/internal/services/user"
 	utils "smart-chat/internal/utils"
 
 	"github.com/gin-contrib/cors"
@@ -74,8 +75,9 @@ func main() {
 	routes.RegisterV2Routes(chatGroupV2, conversationService)
 
 	conversationHistoryService := convHistory.NewConvHistoryService(db)
+	us := userService.NewUserService(db)
 	clientGroupV2 := v2.Group("/client")
-	routes.ClientRoutes(clientGroupV2, conversationHistoryService)
+	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us)
 
 	// Start cron jobs
 	cron_jobs.StartCronJobs(db)

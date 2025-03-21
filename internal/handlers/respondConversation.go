@@ -2,13 +2,18 @@ package handlers
 
 import (
 	"net/http"
+
 	"smart-chat/internal/models"
 	"smart-chat/internal/services/conversation"
+	"smart-chat/internal/services/notifications_job"
 
 	"github.com/gin-gonic/gin"
 )
 
-func RespondConversationHandler(conversationService *conversation.ConversationService) gin.HandlerFunc {
+func RespondConversationHandler(
+	convService *conversation.ConversationService,
+	jobService *notifications_job.JobService,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session, exists := c.Get("session")
 		if !exists {
@@ -22,26 +27,33 @@ func RespondConversationHandler(conversationService *conversation.ConversationSe
 			return
 		}
 
-		var jsonData struct {
+		var reqBody struct {
 			Message string `json:"message" binding:"required"`
 		}
-
-		if err := c.ShouldBindJSON(&jsonData); err != nil {
-			c.JSON(400, gin.H{"error": err.Error()})
-
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
 
-		// Get the whatsapp parameter, default to false
 		whatsapp := c.DefaultQuery("whatsapp", "false") == "true"
+		userInput := reqBody.Message
 
-		userInput := jsonData.Message
-
-		response, err := conversationService.HandleSession(authSession.ID, userInput, models.MessageTypeUserSent, whatsapp)
+		// 1. Handle the conversation.
+		response, err := convService.HandleSession(
+			authSession.ID,
+			userInput,
+			models.MessageTypeUserSent,
+			whatsapp,
+		)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return
 		}
 
+		// 2. Run the notification job in the background.
+		go jobService.SendConversationNotification(userInput, response, authSession)
+
+		// 3. Return the conversation response.
 		c.JSON(http.StatusOK, gin.H{"response": response})
 	}
 }

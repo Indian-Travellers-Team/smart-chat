@@ -1,4 +1,4 @@
-package notification_service
+package notification
 
 // Struct for the request payload for the "create-user-initial-query" API
 type UserInitialQueryRequest struct {

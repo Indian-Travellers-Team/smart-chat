@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"smart-chat/external"
+	external "smart-chat/external/indian_travellers"
 	"strings"
 )
 

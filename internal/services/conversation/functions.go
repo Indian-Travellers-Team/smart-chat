@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"smart-chat/cache"
-	"smart-chat/external"
+	external "smart-chat/external/indian_travellers"
 	"smart-chat/internal/models"
 
 	openai "github.com/sashabaranov/go-openai"

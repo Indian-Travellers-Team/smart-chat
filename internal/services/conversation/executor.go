@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"smart-chat/cache"
-	"smart-chat/external"
+	external "smart-chat/external/indian_travellers"
 	"smart-chat/internal/llm_service"
 	"smart-chat/internal/models"
 

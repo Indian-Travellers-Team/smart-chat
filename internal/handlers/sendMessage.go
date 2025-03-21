@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"log"
-	"smart-chat/external"
+	external "smart-chat/external/indian_travellers"
 	"smart-chat/internal/llm_service"
 	"smart-chat/internal/store"
 

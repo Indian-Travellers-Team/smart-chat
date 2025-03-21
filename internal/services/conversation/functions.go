@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func handleGetPackageDetails(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.PackageDetails, error) {
+func handleGetPackageDetails(indian_travellers_client *external.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.PackageDetails, error) {
 	var args struct {
 		PackageID int `json:"package_id"`
 	}
@@ -27,7 +27,7 @@ func handleGetPackageDetails(toolCall openai.ToolCall, db *gorm.DB, conversation
 	err := cache.GetCache(cacheKey, &packageDetails)
 	if err != nil {
 		log.Println("Cache miss for package details, fetching from external source")
-		fetchedDetails, fetchErr := external.GetPackageDetails(args.PackageID)
+		fetchedDetails, fetchErr := indian_travellers_client.GetPackageDetails(args.PackageID)
 		if fetchErr != nil {
 			return nil, fetchErr
 		}
@@ -64,7 +64,7 @@ func handleGetPackageDetails(toolCall openai.ToolCall, db *gorm.DB, conversation
 }
 
 // New function to create user initial query by calling the external API
-func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
+func createUserInitialQuery(indian_travellers_client *external.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
 	var args struct {
 		NoOfPeople           int    `json:"no_of_people"`
 		PreferredDestination string `json:"preferred_destination"`
@@ -84,7 +84,7 @@ func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationI
 
 	// Call the external API to create the user initial query
 	threadID := fmt.Sprintf("%v", conversationID)
-	_, err := external.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
+	_, err := indian_travellers_client.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
 	if err != nil {
 		log.Printf("Error calling external API: %v", err)
 		return "", err
@@ -113,7 +113,7 @@ func createUserInitialQuery(toolCall openai.ToolCall, db *gorm.DB, conversationI
 }
 
 // New function to create user final booking by calling the external API
-func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
+func createUserFinalBooking(indian_travellers_client *external.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (string, error) {
 	var args struct {
 		TripID int `json:"trip_id"`
 	}
@@ -132,7 +132,7 @@ func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationI
 
 	// Call the external API to create the final booking
 	threadID := fmt.Sprintf("%v", conversationID)
-	_, err := external.CreateUserFinalBooking(threadID, args.TripID)
+	_, err := indian_travellers_client.CreateUserFinalBooking(threadID, args.TripID)
 	if err != nil {
 		log.Printf("Error calling external API: %v", err)
 		return "", err
@@ -161,7 +161,7 @@ func createUserFinalBooking(toolCall openai.ToolCall, db *gorm.DB, conversationI
 }
 
 // New function to fetch upcoming trips for a given package ID
-func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.UpcomingTripsResponseInternal, error) {
+func fetchUpcomingTrips(indian_travellers_client *external.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (*external.UpcomingTripsResponseInternal, error) {
 	var args struct {
 		PackageID int `json:"package_id"`
 	}
@@ -172,7 +172,7 @@ func fetchUpcomingTrips(toolCall openai.ToolCall, db *gorm.DB, conversationID ui
 	}
 
 	// Fetch the upcoming trips from the external service
-	upcomingTrips, err := external.GetUpcomingTrips(args.PackageID)
+	upcomingTrips, err := indian_travellers_client.GetUpcomingTrips(args.PackageID)
 	if err != nil {
 		log.Printf("Error fetching upcoming trips: %v", err)
 		return nil, err

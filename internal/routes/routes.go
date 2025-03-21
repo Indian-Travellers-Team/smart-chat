@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"smart-chat/external/indian_travellers"
 	"smart-chat/internal/handlers"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
@@ -10,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(group *gin.RouterGroup) {
+func RegisterRoutes(group *gin.RouterGroup, indian_travellers *indian_travellers.Client) {
 	group.GET("/ping", handlers.PingHandler)
-	group.POST("/send", handlers.SendMessageHandler)
+	group.POST("/send", handlers.SendMessageHandler(indian_travellers))
 	group.GET("/receive", handlers.ReceiveMessageHandler)
 }
 

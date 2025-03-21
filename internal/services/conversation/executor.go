@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"smart-chat/cache"
+	"smart-chat/config"
+	"smart-chat/external/indian_travellers"
 	external "smart-chat/external/indian_travellers"
 	"smart-chat/internal/llm_service"
 	"smart-chat/internal/models"
@@ -15,13 +17,15 @@ import (
 )
 
 type ConversationExecutor struct {
-	db *gorm.DB
+	db                *gorm.DB
+	indian_travellers *indian_travellers.Client
 }
 
 func NewConversationExecutor(db *gorm.DB) *ConversationExecutor {
 
 	return &ConversationExecutor{
-		db: db,
+		db:                db,
+		indian_travellers: external.NewClient(config.Load()),
 	}
 }
 
@@ -77,7 +81,7 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 		if err != nil {
 			return "", err
 		}
-		functionResponse, err := processFunctionResponse(toolCall, ce.db, conversationID, messageId)
+		functionResponse, err := processFunctionResponse(ce.indian_travellers, toolCall, ce.db, conversationID, messageId)
 		if err != nil {
 			return "", err
 		}
@@ -120,7 +124,7 @@ func (ce *ConversationExecutor) getPackageListFromCache() ([]external.Package, e
 	}
 
 	log.Println("Cache miss for package list, fetching from external source")
-	packages, err := external.GetPackageList()
+	packages, err := ce.indian_travellers.GetPackageList()
 	if err != nil {
 		return nil, err
 	}
@@ -159,17 +163,17 @@ func (ce *ConversationExecutor) updateConversation(conversationID uint, userInpu
 	return messagePair.ID, nil // Return the ID of the newly created message pair
 }
 
-func processFunctionResponse(toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (interface{}, error) {
+func processFunctionResponse(indian_travellers_client *external.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (interface{}, error) {
 	// Generalize the handling of function calls based on the function's name
 	switch toolCall.Function.Name {
 	case "get_package_details":
-		return handleGetPackageDetails(toolCall, db, conversationID, messageId)
+		return handleGetPackageDetails(indian_travellers_client, toolCall, db, conversationID, messageId)
 	case "create_user_initial_query":
-		return createUserInitialQuery(toolCall, db, conversationID, messageId)
+		return createUserInitialQuery(indian_travellers_client, toolCall, db, conversationID, messageId)
 	case "create_user_final_booking":
-		return createUserFinalBooking(toolCall, db, conversationID, messageId)
+		return createUserFinalBooking(indian_travellers_client, toolCall, db, conversationID, messageId)
 	case "fetch_upcoming_trips":
-		return fetchUpcomingTrips(toolCall, db, conversationID, messageId)
+		return fetchUpcomingTrips(indian_travellers_client, toolCall, db, conversationID, messageId)
 	// Add more cases as necessary for other function types
 	default:
 		log.Printf("Unhandled function call: %s", toolCall.Function.Name)

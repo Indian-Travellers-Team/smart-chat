@@ -9,6 +9,7 @@ import (
 	"smart-chat/auth"
 	"smart-chat/cache"
 	"smart-chat/config"
+	"smart-chat/external/indian_travellers"
 	"smart-chat/external/notification"
 	middleware "smart-chat/internal/middlewares"
 	"smart-chat/internal/models"
@@ -61,9 +62,10 @@ func main() {
 	authGroup := v1.Group("/auth")
 	auth.RegisterAuthRoutes(authGroup, authService)
 
+	indian_travellers := indian_travellers.NewClient(cfg)
 	chatGroup := v1.Group("/chat")
 	chatGroup.Use(middleware.AuthMiddleware())
-	routes.RegisterRoutes(chatGroup)
+	routes.RegisterRoutes(chatGroup, indian_travellers)
 
 	v2 := router.Group("/v2")
 	authServicev2 := auth.NewAuthV2Service(db)
@@ -71,7 +73,7 @@ func main() {
 	auth.RegisterV2AuthRoutes(authGroupv2, authServicev2)
 
 	conversationService := conversation.NewConversationService(db)
-	notifClient := notification.NewClient("http://127.0.0.1:8000")
+	notifClient := notification.NewClient(cfg.NotificationServiceURL)
 	jobService := notifications_job.NewJobService(notifClient, db)
 
 	chatGroupV2 := v2.Group("/chat")

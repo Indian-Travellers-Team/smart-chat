@@ -9,12 +9,13 @@ import (
 	"smart-chat/auth"
 	"smart-chat/cache"
 	"smart-chat/config"
-	"smart-chat/internal/cron_jobs"
+	"smart-chat/external/notification"
 	middleware "smart-chat/internal/middlewares"
 	"smart-chat/internal/models"
 	"smart-chat/internal/routes"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
+	notifications_job "smart-chat/internal/services/notifications_job"
 	userService "smart-chat/internal/services/user"
 	utils "smart-chat/internal/utils"
 
@@ -70,9 +71,12 @@ func main() {
 	auth.RegisterV2AuthRoutes(authGroupv2, authServicev2)
 
 	conversationService := conversation.NewConversationService(db)
+	notifClient := notification.NewClient("http://127.0.0.1:8000")
+	jobService := notifications_job.NewJobService(notifClient, db)
+
 	chatGroupV2 := v2.Group("/chat")
 	chatGroupV2.Use(middleware.AuthSessionMiddleware(db))
-	routes.RegisterV2Routes(chatGroupV2, conversationService)
+	routes.RegisterV2Routes(chatGroupV2, conversationService, jobService)
 
 	conversationHistoryService := convHistory.NewConvHistoryService(db)
 	us := userService.NewUserService(db)
@@ -80,7 +84,7 @@ func main() {
 	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us)
 
 	// Start cron jobs
-	cron_jobs.StartCronJobs(db)
+	//cron_jobs.StartCronJobs(db)
 
 	c := cron.New()
 	if _, err := c.AddFunc("0 0 * * *", utils.PushConversationsToS3); err != nil {

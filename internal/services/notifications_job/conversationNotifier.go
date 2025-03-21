@@ -6,14 +6,20 @@ import (
 
 	"smart-chat/external/notification"
 	"smart-chat/internal/models"
+
+	"gorm.io/gorm"
 )
 
 type JobService struct {
 	notifClient *notification.Client
+	db          *gorm.DB
 }
 
-func NewJobService(client *notification.Client) *JobService {
-	return &JobService{notifClient: client}
+func NewJobService(client *notification.Client, db *gorm.DB) *JobService {
+	return &JobService{
+		notifClient: client,
+		db:          db,
+	}
 }
 
 // SendConversationNotification is the background job that sends a conversation notification.
@@ -26,11 +32,20 @@ func (js *JobService) SendConversationNotification(userInput, botResponse string
 		parsed.Content = botResponse
 	}
 
-	// Example conversation ID logic:
-	conversationID := uint(1)
+	// Query the most recent conversation associated with this session.
+	var conv models.Conversation
+	err := js.db.
+		Where("session_id = ?", session.ID).
+		Order("created_at desc").
+		First(&conv).Error
+	if err != nil {
+		log.Printf("failed to find conversation for session %d: %v", session.ID, err)
+		// Optionally, handle error or set conv.ID to a fallback value.
+		return
+	}
 
 	payload := notification.Payload{
-		ConversationID: conversationID,
+		ConversationID: conv.ID,
 		Mobile:         session.User.Mobile,
 		MessagePair: notification.MessagePair{
 			User: userInput,

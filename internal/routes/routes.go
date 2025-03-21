@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"smart-chat/external/notification"
 	"smart-chat/internal/handlers"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
@@ -17,16 +16,12 @@ func RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/receive", handlers.ReceiveMessageHandler)
 }
 
-func RegisterV2Routes(group *gin.RouterGroup, convService *conversation.ConversationService) {
-
-	notifClient := notification.NewClient("http://notification_service")
-
-	jobService := notifications_job.NewJobService(notifClient)
+func RegisterV2Routes(group *gin.RouterGroup, convService *conversation.ConversationService, jobService *notifications_job.JobService) {
 
 	group.POST("/start", handlers.StartConversationHandler(convService))
 	group.GET("/messages", handlers.GetConversationHandler(convService))
 
-	group.GET("/start",
+	group.POST("/message",
 		handlers.RespondConversationHandler(convService, jobService))
 }
 

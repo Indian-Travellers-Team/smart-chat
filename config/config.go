@@ -11,30 +11,34 @@ import (
 )
 
 type Config struct {
-	OpenAIKey        string
-	FAST2SMS_API_KEY string
-	DBHost           string
-	DBPort           string
-	DBUser           string
-	DBPassword       string
-	DBName           string
-	Email            string
-	EmailPassword    string
-	SecretToken      string
+	OpenAIKey              string
+	FAST2SMS_API_KEY       string
+	DBHost                 string
+	DBPort                 string
+	DBUser                 string
+	DBPassword             string
+	DBName                 string
+	Email                  string
+	EmailPassword          string
+	SecretToken            string
+	IndianTeavellersURL    string
+	NotificationServiceURL string
 }
 
 func Load() *Config {
 	config := &Config{
-		OpenAIKey:        "default-openai-key",
-		FAST2SMS_API_KEY: "default-fast2sms-api-key",
-		DBHost:           "localhost",
-		DBPort:           "3306",
-		DBUser:           "root",
-		DBPassword:       "password",
-		DBName:           "smart_chat",
-		Email:            "test@email.com",
-		EmailPassword:    "test_pwd",
-		SecretToken:      "secret_token",
+		OpenAIKey:              "default-openai-key",
+		FAST2SMS_API_KEY:       "default-fast2sms-api-key",
+		DBHost:                 "localhost",
+		DBPort:                 "3306",
+		DBUser:                 "root",
+		DBPassword:             "password",
+		DBName:                 "smart_chat",
+		Email:                  "test@email.com",
+		EmailPassword:          "test_pwd",
+		SecretToken:            "secret_token",
+		IndianTeavellersURL:    "http://localhost:8080",
+		NotificationServiceURL: "http://localhost:8081",
 	}
 	if os.Getenv("SMART_CHAT_ENV") == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -70,19 +74,23 @@ func Load() *Config {
 		config.Email = getParameter("EmailAddress")
 		config.EmailPassword = getParameter("EmailPassword")
 		config.SecretToken = getParameter("WASecretToken")
+		config.IndianTeavellersURL = getParameter("IndianTeavellersURL")
+		config.NotificationServiceURL = getParameter("NotificationServiceURL")
 	} else {
 		gin.SetMode(gin.DebugMode)
 		return &Config{
-			OpenAIKey:        "sk-xxxxxxx",
-			FAST2SMS_API_KEY: "xxxxxxx",
-			DBHost:           "localhost",
-			DBPort:           "5432",
-			DBUser:           "postgres",
-			DBPassword:       "somepass",
-			DBName:           "smart_chat",
-			Email:            "test@test.com",
-			EmailPassword:    "xxxxxxxxxxxxxx",
-			SecretToken:      "secret_token",
+			OpenAIKey:              "sk-xxxxx",
+			FAST2SMS_API_KEY:       "xxxxxxx",
+			DBHost:                 "localhost",
+			DBPort:                 "5432",
+			DBUser:                 "postgres",
+			DBPassword:             "somepass",
+			DBName:                 "smart_chat",
+			Email:                  "test@test.com",
+			EmailPassword:          "xxxxxxxxxx",
+			SecretToken:            "secret_token",
+			IndianTeavellersURL:    "http://localhost:8080",
+			NotificationServiceURL: "http://localhost:8081",
 		}
 	}
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -28,7 +29,8 @@ func NewClient(cfg *config.Config) *Client {
 
 // GetPackageList fetches the list of packages from the external API.
 func (c *Client) GetPackageList() ([]Package, error) {
-	url := fmt.Sprintf("%s/api/packages", c.baseURL)
+	url := fmt.Sprintf("%s/api/packages/", c.baseURL)
+	log.Println(url)
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, err
@@ -50,6 +52,7 @@ func (c *Client) GetPackageList() ([]Package, error) {
 // GetPackageDetails fetches the details of a specific package by ID.
 func (c *Client) GetPackageDetails(packageID int) (*PackageDetails, error) {
 	url := fmt.Sprintf("%s/api/packages/%d", c.baseURL, packageID)
+	log.Println(url)
 	resp, err := c.httpClient.Get(url)
 	if err != nil {
 		return nil, err
@@ -169,7 +172,8 @@ func (c *Client) GetUpcomingTrips(packageID int) (*UpcomingTripsResponseInternal
 
 // GetWorkflow fetches the workflow details for a given workflow ID.
 func (c *Client) GetWorkflow(workflowID int) (*WorkflowResponse, error) {
-	apiURL := fmt.Sprintf("%s/agent/workflow/%d/", c.baseURL, workflowID)
+	apiURL := fmt.Sprintf("%s/api/agent/workflow/%d/", c.baseURL, workflowID)
+	log.Println(apiURL)
 	resp, err := c.httpClient.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("error sending GET request to API: %v", err)

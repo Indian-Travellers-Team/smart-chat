@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"smart-chat/external"
+	external "smart-chat/external/indian_travellers"
 	"strings"
 )
 
@@ -75,7 +75,7 @@ func SystemMessageTemplate(packages []external.Package) string {
 }
 
 // SystemMessageTemplateForWhatsapp formats a WhatsApp message based on the provided packages and workflowID.
-func SystemMessageTemplateForWhatsapp(packages []external.Package, workflowID int) string {
+func SystemMessageTemplateForWhatsapp(indian_travellers *external.Client, packages []external.Package, workflowID int) string {
 	var packageListBuilder strings.Builder
 
 	// Build the package list
@@ -91,7 +91,7 @@ func SystemMessageTemplateForWhatsapp(packages []external.Package, workflowID in
 	}
 
 	// Call GetWorkflow to retrieve the workflow for the given workflowID
-	workflowResponse, err := external.GetWorkflow(workflowID)
+	workflowResponse, err := indian_travellers.GetWorkflow(workflowID)
 	if err != nil {
 		log.Printf("Error fetching workflow: %v", err)
 		return "Error fetching workflow details."

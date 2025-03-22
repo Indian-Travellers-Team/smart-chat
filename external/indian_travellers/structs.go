@@ -1,4 +1,4 @@
-package external
+package indian_travellers
 
 // Struct for the request payload for the "create-user-initial-query" API
 type UserInitialQueryRequest struct {

@@ -9,7 +9,6 @@ import (
 	"smart-chat/auth"
 	"smart-chat/cache"
 	"smart-chat/config"
-	"smart-chat/internal/cron_jobs"
 	middleware "smart-chat/internal/middlewares"
 	"smart-chat/internal/models"
 	"smart-chat/internal/routes"
@@ -29,7 +28,7 @@ func main() {
 	cache.Initialize("localhost:11211")
 	cfg := config.Load()
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Kolkata", cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=require TimeZone=Asia/Kolkata", cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -80,7 +79,7 @@ func main() {
 	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us)
 
 	// Start cron jobs
-	cron_jobs.StartCronJobs(db)
+	//cron_jobs.StartCronJobs(db)
 
 	c := cron.New()
 	if _, err := c.AddFunc("0 0 * * *", utils.PushConversationsToS3); err != nil {

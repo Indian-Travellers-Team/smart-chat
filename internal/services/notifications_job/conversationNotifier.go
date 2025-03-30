@@ -61,17 +61,11 @@ func (js *JobService) SendConversationNotification(userInput, botResponse string
 // SendConversationNotificationByID is an alternative background job that sends a conversation notification
 // based on a given conversationID rather than a session.
 func (js *JobService) SendConversationNotificationByID(userInput, botResponse string, conversationID uint) {
-	var parsed struct {
-		Content string `json:"content"`
-	}
-	if err := json.Unmarshal([]byte(botResponse), &parsed); err != nil {
-		log.Printf("failed to parse bot response: %v", err)
-		parsed.Content = botResponse
-	}
-
-	// Query the conversation based on the provided conversationID.
+	// Query the conversation based on the provided conversationID, preloading Session and its User.
 	var conv models.Conversation
-	err := js.db.First(&conv, conversationID).Error
+	err := js.db.
+		Preload("Session.User").
+		First(&conv, conversationID).Error
 	if err != nil {
 		log.Printf("failed to find conversation with ID %d: %v", conversationID, err)
 		return
@@ -82,7 +76,7 @@ func (js *JobService) SendConversationNotificationByID(userInput, botResponse st
 		Mobile:         conv.Session.User.Mobile,
 		MessagePair: notification.MessagePair{
 			User: userInput,
-			Bot:  parsed.Content,
+			Bot:  botResponse,
 		},
 	}
 

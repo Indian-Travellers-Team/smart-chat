@@ -28,6 +28,8 @@ func AddMessageHandler(hs *human.HumanService, jobService *notifications_job.Job
 			return
 		}
 
+		go jobService.SendConversationNotificationByID("", req.Message, req.ConversationID)
+
 		c.JSON(http.StatusOK, gin.H{"status": "Message added successfully"})
 	}
 }

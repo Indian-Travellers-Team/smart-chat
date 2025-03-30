@@ -16,6 +16,7 @@ import (
 	"smart-chat/internal/routes"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
+	"smart-chat/internal/services/human"
 	notifications_job "smart-chat/internal/services/notifications_job"
 	userService "smart-chat/internal/services/user"
 	utils "smart-chat/internal/utils"
@@ -82,8 +83,11 @@ func main() {
 
 	conversationHistoryService := convHistory.NewConvHistoryService(db)
 	us := userService.NewUserService(db)
+
+	humanService := human.NewHumanService(db)
+
 	clientGroupV2 := v2.Group("/client")
-	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us)
+	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us, humanService)
 
 	// Start cron jobs
 	//cron_jobs.StartCronJobs(db)

@@ -86,7 +86,7 @@ func (c *Client) CreateUserInitialQuery(threadID string, mobile string, noOfPeop
 		return nil, fmt.Errorf("error marshalling request payload: %v", err)
 	}
 
-	apiURL := fmt.Sprintf("%s/agent/function/create-user-initial-query/", c.baseURL)
+	apiURL := fmt.Sprintf("%s/api/agent/function/create-user-initial-query/", c.baseURL)
 	resp, err := c.httpClient.Post(apiURL, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, fmt.Errorf("error sending request to API: %v", err)
@@ -117,7 +117,7 @@ func (c *Client) CreateUserFinalBooking(threadID string, tripID int) (*ToolRespo
 		return nil, fmt.Errorf("error marshalling request payload: %v", err)
 	}
 
-	apiURL := fmt.Sprintf("%s/agent/function/create-user-final-booking/", c.baseURL)
+	apiURL := fmt.Sprintf("%s/api/agent/function/create-user-final-booking/", c.baseURL)
 	resp, err := c.httpClient.Post(apiURL, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, fmt.Errorf("error sending request to API: %v", err)
@@ -138,7 +138,7 @@ func (c *Client) CreateUserFinalBooking(threadID string, tripID int) (*ToolRespo
 
 // GetUpcomingTrips fetches the upcoming trips for a specific package by its ID.
 func (c *Client) GetUpcomingTrips(packageID int) (*UpcomingTripsResponseInternal, error) {
-	apiURL := fmt.Sprintf("%s/v1/web/upcoming-trips/%d/", c.baseURL, packageID)
+	apiURL := fmt.Sprintf("%s/api/v1/web/upcoming-trips/%d/", c.baseURL, packageID)
 	resp, err := c.httpClient.Get(apiURL)
 	if err != nil {
 		return nil, fmt.Errorf("error sending GET request to API: %v", err)

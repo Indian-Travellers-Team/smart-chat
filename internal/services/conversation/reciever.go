@@ -1,6 +1,9 @@
 package conversation
 
 import (
+	"fmt"
+	"log"
+	"smart-chat/cache"
 	"smart-chat/internal/models"
 
 	"gorm.io/gorm"
@@ -28,6 +31,12 @@ func (cr *ConversationReceiver) ReceiveMessage(sessionID uint, message string, m
 	response, err := cr.Executor.Execute(conversation.ID, message, messageType, cr.ConvState, whatsapp)
 	if err != nil {
 		return "", err
+	}
+	// Build the cache key using the format defined in cache.CacheKeys.UserDetails.Key
+	cacheKey := fmt.Sprintf(cache.CacheKeys.UserDetails.Key, conversation.ID)
+	// Set the fetched details in cache with the TTL defined in cache.CacheKeys.UserDetails.TTL
+	if err := cache.DeleteCache(cacheKey); err != nil {
+		log.Println("Unable to delete cache for user details")
 	}
 	return response, nil
 }

@@ -12,6 +12,7 @@ const (
 	MessageTypeUserSent
 	MessageTypeOffTopic
 	MessageTypeFunctionCall
+	MessageTypeAgentAssumedAssistant
 )
 
 type MessagePair struct {

@@ -5,6 +5,7 @@ import (
 	"smart-chat/internal/handlers"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
+	"smart-chat/internal/services/human"
 	"smart-chat/internal/services/notifications_job"
 	userService "smart-chat/internal/services/user"
 
@@ -26,9 +27,16 @@ func RegisterV2Routes(group *gin.RouterGroup, convService *conversation.Conversa
 		handlers.RespondConversationHandler(convService, jobService))
 }
 
-func ClientRoutes(group *gin.RouterGroup, convHistoryService *convHistory.ConvHistoryService, us *userService.UserService) {
+func ClientRoutes(
+	group *gin.RouterGroup,
+	convHistoryService *convHistory.ConvHistoryService,
+	us *userService.UserService,
+	humanService *human.HumanService,
+	jobService *notifications_job.JobService,
+) {
 	group.POST("/login", handlers.ClientAdminLoginHandler())
 	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService))
 	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService))
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
+	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService))
 }

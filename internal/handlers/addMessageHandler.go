@@ -4,13 +4,14 @@ import (
 	"net/http"
 
 	"smart-chat/internal/services/human"
+	"smart-chat/internal/services/notifications_job"
 
 	"github.com/gin-gonic/gin"
 )
 
 // AddMessageHandler handles POST /add-message requests.
 // It expects a JSON body containing conversation_id and message.
-func AddMessageHandler(hs *human.HumanService) gin.HandlerFunc {
+func AddMessageHandler(hs *human.HumanService, jobService *notifications_job.JobService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
 			ConversationID uint   `json:"conversation_id" binding:"required"`

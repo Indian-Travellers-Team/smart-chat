@@ -87,7 +87,7 @@ func main() {
 	humanService := human.NewHumanService(db)
 
 	clientGroupV2 := v2.Group("/client")
-	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us, humanService)
+	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us, humanService, jobService)
 
 	// Start cron jobs
 	//cron_jobs.StartCronJobs(db)

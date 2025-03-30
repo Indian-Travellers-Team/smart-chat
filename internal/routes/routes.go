@@ -32,10 +32,11 @@ func ClientRoutes(
 	convHistoryService *convHistory.ConvHistoryService,
 	us *userService.UserService,
 	humanService *human.HumanService,
+	jobService *notifications_job.JobService,
 ) {
 	group.POST("/login", handlers.ClientAdminLoginHandler())
 	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService))
 	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService))
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
-	group.POST("/add-message", handlers.AddMessageHandler(humanService))
+	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService))
 }

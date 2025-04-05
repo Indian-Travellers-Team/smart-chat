@@ -12,5 +12,5 @@ type FunctionCall struct {
 	MessagePair      MessagePair  `gorm:"foreignKey:MessageID;references:ID"`
 	Name             string       `gorm:"type:varchar(100)"`
 	Args             []byte       `gorm:"type:json"`
-	FunctionResponse string       `gorm:"type:varchar(500)"`
+	FunctionResponse string       `gorm:"type:text"`
 }

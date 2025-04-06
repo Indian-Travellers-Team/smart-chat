@@ -50,6 +50,10 @@ func (cs *ConversationState) NextState(messageType models.MessageType) {
 	cs.State = workflowNextState[workflowActionBasedState[messageType]]
 }
 
+func (cs *ConversationState) EndState() {
+	cs.State = ConversationStateEnd
+}
+
 func (cs *ConversationState) AddToHistory(message openai.ChatCompletionMessage) {
 	cs.ConversationHistory = append(cs.ConversationHistory, message)
 }

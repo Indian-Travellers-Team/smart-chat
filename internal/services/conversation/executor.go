@@ -83,7 +83,9 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 		}
 		functionResponse, err := processFunctionResponse(ce.indian_travellers, toolCall, ce.db, conversationID, messageId)
 		if err != nil {
-			return "", err
+			log.Printf("Error processing function response: %v", err)
+			conversationState.EndState()
+			return "we encountered an error while processing your request. Please try again later.", nil
 		}
 		functionResponseString, _ := json.Marshal(functionResponse)
 		functionMessage := openai.ChatCompletionMessage{

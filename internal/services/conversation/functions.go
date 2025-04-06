@@ -87,7 +87,6 @@ func createUserInitialQuery(indian_travellers_client *external.Client, toolCall 
 	_, err := indian_travellers_client.CreateUserInitialQuery(threadID, mobile, args.NoOfPeople, args.PreferredDestination, args.PreferredDate)
 	if err != nil {
 		log.Printf("Error calling external API: %v", err)
-		return "", err
 	}
 
 	// Prepare message for LLM response
@@ -135,7 +134,6 @@ func createUserFinalBooking(indian_travellers_client *external.Client, toolCall 
 	_, err := indian_travellers_client.CreateUserFinalBooking(threadID, args.TripID)
 	if err != nil {
 		log.Printf("Error calling external API: %v", err)
-		return "", err
 	}
 
 	// Prepare message for LLM response

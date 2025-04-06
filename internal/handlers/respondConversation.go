@@ -49,9 +49,10 @@ func RespondConversationHandler(
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return
 		}
-
-		// 2. Run the notification job in the background.
-		go jobService.SendConversationNotification(userInput, response, authSession)
+		if whatsapp {
+			// 2. Run the notification job in the background.
+			go jobService.SendConversationNotification(userInput, response, authSession)
+		}
 
 		// 3. Return the conversation response.
 		c.JSON(http.StatusOK, gin.H{"response": response})

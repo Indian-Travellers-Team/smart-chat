@@ -23,6 +23,8 @@ type Config struct {
 	SecretToken            string
 	IndianTeavellersURL    string
 	NotificationServiceURL string
+	SlackNotificationURL   string
+	SlackAlertURL          string
 }
 
 func Load() *Config {
@@ -37,8 +39,10 @@ func Load() *Config {
 		Email:                  "test@email.com",
 		EmailPassword:          "test_pwd",
 		SecretToken:            "secret_token",
-		IndianTeavellersURL:    "http://localhost:8080",
-		NotificationServiceURL: "http://localhost:8081",
+		IndianTeavellersURL:    "http://127.0.0.1:8000",
+		NotificationServiceURL: "http://127.0.0.1:8001",
+		SlackNotificationURL:   "https://hooks.slack.com/services/xx",
+		SlackAlertURL:          "https://hooks.slack.com/services/xx",
 	}
 	if os.Getenv("SMART_CHAT_ENV") == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -76,6 +80,8 @@ func Load() *Config {
 		config.SecretToken = getParameter("WASecretToken")
 		config.IndianTeavellersURL = getParameter("IndianTeavellersURL")
 		config.NotificationServiceURL = getParameter("NotificationServiceURL")
+		config.SlackNotificationURL = getParameter("SLACK_NOTIFICATION_URL")
+		config.SlackAlertURL = getParameter("SLACK_ALERT_URL")
 	} else {
 		gin.SetMode(gin.DebugMode)
 		return &Config{
@@ -89,8 +95,10 @@ func Load() *Config {
 			Email:                  "test@test.com",
 			EmailPassword:          "xxxxxxxxxx",
 			SecretToken:            "secret_token",
-			IndianTeavellersURL:    "http://localhost:8080",
-			NotificationServiceURL: "http://localhost:8081",
+			IndianTeavellersURL:    "http://127.0.0.1:8000",
+			NotificationServiceURL: "http://127.0.0.1:8001",
+			SlackNotificationURL:   "https://hooks.slack.com/services/xx",
+			SlackAlertURL:          "https://hooks.slack.com/services/xx",
 		}
 	}
 

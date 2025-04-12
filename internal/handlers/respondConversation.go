@@ -6,6 +6,7 @@ import (
 	"smart-chat/internal/models"
 	"smart-chat/internal/services/conversation"
 	"smart-chat/internal/services/notifications_job"
+	"smart-chat/internal/services/slack"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +14,7 @@ import (
 func RespondConversationHandler(
 	convService *conversation.ConversationService,
 	jobService *notifications_job.JobService,
+	slackService *slack.SlackService,
 ) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session, exists := c.Get("session")
@@ -51,7 +53,7 @@ func RespondConversationHandler(
 		}
 		if whatsapp {
 			// 2. Run the notification job in the background.
-			go jobService.SendConversationNotification(userInput, response, authSession)
+			go jobService.SendConversationNotification(userInput, response, authSession, slackService)
 		}
 
 		// 3. Return the conversation response.

@@ -2,10 +2,12 @@ package notifications_job
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"smart-chat/external/notification"
 	"smart-chat/internal/models"
+	"smart-chat/internal/services/slack"
 
 	"gorm.io/gorm"
 )
@@ -23,7 +25,7 @@ func NewJobService(client *notification.Client, db *gorm.DB) *JobService {
 }
 
 // SendConversationNotification is the background job that sends a conversation notification.
-func (js *JobService) SendConversationNotification(userInput, botResponse string, session models.Session) {
+func (js *JobService) SendConversationNotification(userInput, botResponse string, session models.Session, slackService *slack.SlackService) {
 	var parsed struct {
 		Content string `json:"content"`
 	}
@@ -54,13 +56,14 @@ func (js *JobService) SendConversationNotification(userInput, botResponse string
 	}
 
 	if err := js.notifClient.SendMessageEvent(payload); err != nil {
+		slackService.SendSlackAlertAsync(fmt.Sprintf("failed to send notification: *%v* for conversation id *%d*", err, conv.ID))
 		log.Printf("failed to send notification: %v", err)
 	}
 }
 
 // SendConversationNotificationByID is an alternative background job that sends a conversation notification
 // based on a given conversationID rather than a session.
-func (js *JobService) SendConversationNotificationByID(userInput, botResponse string, conversationID uint) {
+func (js *JobService) SendConversationNotificationByID(userInput, botResponse string, conversationID uint, slackService *slack.SlackService) {
 	// Query the conversation based on the provided conversationID, preloading Session and its User.
 	var conv models.Conversation
 	err := js.db.
@@ -81,6 +84,7 @@ func (js *JobService) SendConversationNotificationByID(userInput, botResponse st
 	}
 
 	if err := js.notifClient.SendMessageEvent(payload); err != nil {
+		slackService.SendSlackAlertAsync(fmt.Sprintf("failed to send notification: *%v* for conversation id *%d*", err, conversationID))
 		log.Printf("failed to send notification: %v", err)
 	}
 }

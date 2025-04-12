@@ -77,7 +77,7 @@ func main() {
 	conversationService := conversation.NewConversationService(db)
 	notifClient := notification.NewClient(cfg.NotificationServiceURL)
 	jobService := notifications_job.NewJobService(notifClient, db)
-	slackService := slack.NewSlackService(cfg.SlackNotificationURL, cfg.SlackAlertURL, db)
+	slackService := slack.NewSlackService(cfg, db)
 
 	chatGroupV2 := v2.Group("/chat")
 	chatGroupV2.Use(middleware.AuthSessionMiddleware(db))
@@ -89,7 +89,7 @@ func main() {
 	humanService := human.NewHumanService(db)
 
 	clientGroupV2 := v2.Group("/client")
-	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us, humanService, jobService)
+	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us, humanService, jobService, slackService)
 
 	// Start cron jobs
 	//cron_jobs.StartCronJobs(db)

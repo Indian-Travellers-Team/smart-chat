@@ -19,13 +19,18 @@ func RegisterRoutes(group *gin.RouterGroup, indian_travellers *indian_travellers
 	group.GET("/receive", handlers.ReceiveMessageHandler)
 }
 
-func RegisterV2Routes(group *gin.RouterGroup, convService *conversation.ConversationService, jobService *notifications_job.JobService, slackService *slack.SlackService) {
+func RegisterV2Routes(
+	group *gin.RouterGroup,
+	convService *conversation.ConversationService,
+	jobService *notifications_job.JobService,
+	slackService *slack.SlackService,
+) {
 
 	group.POST("/start", handlers.StartConversationHandler(convService, slackService))
 	group.GET("/messages", handlers.GetConversationHandler(convService))
 
 	group.POST("/message",
-		handlers.RespondConversationHandler(convService, jobService))
+		handlers.RespondConversationHandler(convService, jobService, slackService))
 }
 
 func ClientRoutes(
@@ -34,10 +39,11 @@ func ClientRoutes(
 	us *userService.UserService,
 	humanService *human.HumanService,
 	jobService *notifications_job.JobService,
+	slackService *slack.SlackService,
 ) {
 	group.POST("/login", handlers.ClientAdminLoginHandler())
 	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService))
 	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService))
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
-	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService))
+	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService, slackService))
 }

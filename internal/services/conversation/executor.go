@@ -8,9 +8,9 @@ import (
 	"smart-chat/cache"
 	"smart-chat/config"
 	"smart-chat/external/indian_travellers"
-	external "smart-chat/external/indian_travellers"
 	"smart-chat/internal/llm_service"
 	"smart-chat/internal/models"
+	"smart-chat/internal/services/slack"
 
 	openai "github.com/sashabaranov/go-openai"
 	"gorm.io/gorm"
@@ -19,13 +19,15 @@ import (
 type ConversationExecutor struct {
 	db                *gorm.DB
 	indian_travellers *indian_travellers.Client
+	slackService      *slack.SlackService
 }
 
 func NewConversationExecutor(db *gorm.DB) *ConversationExecutor {
 
 	return &ConversationExecutor{
 		db:                db,
-		indian_travellers: external.NewClient(config.Load()),
+		indian_travellers: indian_travellers.NewClient(config.Load()),
+		slackService:      slack.NewSlackService(config.Load(), db),
 	}
 }
 
@@ -33,6 +35,7 @@ func (ce *ConversationExecutor) Execute(conversationID uint, userInput string, m
 	packages, err := ce.getPackageListFromCache()
 	if err != nil {
 		log.Printf("Error getting package list: %v", err)
+		ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error getting package list: *%v* for conversation ID: *%d*", err, conversationID))
 		return "", err
 	}
 	messages := ce.prepareMessages(conversationState.ConversationHistory, packages, userInput, whatsapp)
@@ -61,12 +64,14 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 		responseType, responseContent, totalTokens, err = llm_service.GetOpenAIResponsev2Whatsapp(conversationState.ConversationHistory)
 		if err != nil {
 			log.Printf("Error processing user input with OpenAI: %v", err)
+			ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error processing user input with OpenAI: *%v* for conversation ID: *%d*", err, conversationID))
 			return "", err
 		}
 	} else {
 		responseType, responseContent, totalTokens, err = llm_service.GetOpenAIResponsev2(conversationState.ConversationHistory)
 		if err != nil {
 			log.Printf("Error processing user input with OpenAI: %v", err)
+			ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error processing user input with OpenAI: *%v* for conversation ID: *%d*", err, conversationID))
 			return "", err
 		}
 	}
@@ -75,15 +80,18 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 	case models.MessageTypeFunctionCall:
 		toolCall, ok := responseContent.(openai.ToolCall)
 		if !ok {
+			ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error asserting tool call from response content: *%v* for conversation ID: *%d*", err, conversationID))
 			return "", errors.New("error asserting tool call from response content")
 		}
 		messageId, err := ce.updateConversation(conversationID, "", "", totalTokens, responseType)
 		if err != nil {
+			ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error updating conversation: *%v* for conversation ID: *%d*", err, conversationID))
 			return "", err
 		}
 		functionResponse, err := processFunctionResponse(ce.indian_travellers, toolCall, ce.db, conversationID, messageId)
 		if err != nil {
 			log.Printf("Error processing function response: %v", err)
+			ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error processing function response: *%v* for conversation ID: *%d*", err, conversationID))
 			conversationState.EndState()
 			return "we encountered an error while processing your request. Please try again later.", nil
 		}
@@ -97,6 +105,7 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 	default:
 		botResponse, _ = responseContent.(string)
 		if _, err := ce.updateConversation(conversationID, userInput, botResponse, totalTokens, responseType); err != nil {
+			ce.slackService.SendSlackAlertAsync(fmt.Sprintf("Error updating conversation: *%v* for conversation ID: *%d*", err, conversationID))
 			return "", err
 		}
 	}
@@ -104,7 +113,7 @@ func (ce *ConversationExecutor) processInput(conversationID uint, userInput stri
 	return botResponse, nil
 }
 
-func (ce *ConversationExecutor) prepareMessages(history []openai.ChatCompletionMessage, packages []external.Package, userInput string, whatsapp bool) []openai.ChatCompletionMessage {
+func (ce *ConversationExecutor) prepareMessages(history []openai.ChatCompletionMessage, packages []indian_travellers.Package, userInput string, whatsapp bool) []openai.ChatCompletionMessage {
 	var systemTemplate string
 	if whatsapp {
 		systemTemplate = llm_service.SystemMessageTemplateForWhatsapp(ce.indian_travellers, packages, 1)
@@ -116,9 +125,9 @@ func (ce *ConversationExecutor) prepareMessages(history []openai.ChatCompletionM
 	return messages
 }
 
-func (ce *ConversationExecutor) getPackageListFromCache() ([]external.Package, error) {
+func (ce *ConversationExecutor) getPackageListFromCache() ([]indian_travellers.Package, error) {
 	cacheKey := fmt.Sprintf(cache.CacheKeys.GetPackageList.Key)
-	var packages []external.Package
+	var packages []indian_travellers.Package
 
 	if err := cache.GetCache(cacheKey, &packages); err == nil {
 		log.Println("Cache hit for package list")
@@ -165,7 +174,7 @@ func (ce *ConversationExecutor) updateConversation(conversationID uint, userInpu
 	return messagePair.ID, nil // Return the ID of the newly created message pair
 }
 
-func processFunctionResponse(indian_travellers_client *external.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (interface{}, error) {
+func processFunctionResponse(indian_travellers_client *indian_travellers.Client, toolCall openai.ToolCall, db *gorm.DB, conversationID uint, messageId uint) (interface{}, error) {
 	// Generalize the handling of function calls based on the function's name
 	switch toolCall.Function.Name {
 	case "get_package_details":

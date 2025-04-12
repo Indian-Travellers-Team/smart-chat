@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"smart-chat/config"
 	"smart-chat/internal/models"
 
 	"gorm.io/gorm"
@@ -20,10 +21,10 @@ type SlackService struct {
 }
 
 // NewSlackService returns a new SlackService.
-func NewSlackService(notificationURL, alertURL string, db *gorm.DB) *SlackService {
+func NewSlackService(cfg *config.Config, db *gorm.DB) *SlackService {
 	return &SlackService{
-		NotificationURL: notificationURL,
-		AlertURL:        alertURL,
+		NotificationURL: cfg.SlackNotificationURL,
+		AlertURL:        cfg.SlackAlertURL,
 		db:              db,
 	}
 }

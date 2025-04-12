@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"smart-chat/internal/models"
 	"smart-chat/internal/services/conversation"
+	"smart-chat/internal/services/slack"
 
 	"github.com/gin-gonic/gin"
 )
 
-func StartConversationHandler(conversationService *conversation.ConversationService) gin.HandlerFunc {
+func StartConversationHandler(conversationService *conversation.ConversationService, slackService *slack.SlackService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session, exists := c.Get("session")
 		if !exists {
@@ -34,6 +35,8 @@ func StartConversationHandler(conversationService *conversation.ConversationServ
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return
 		}
+
+		slackService.NotifyNewConversation(authSession, whatsapp)
 
 		// Response to indicate the conversation has been handled/started.
 		// In a real scenario, you might want to send back a more meaningful response.

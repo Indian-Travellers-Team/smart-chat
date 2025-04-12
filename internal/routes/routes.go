@@ -7,6 +7,7 @@ import (
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/human"
 	"smart-chat/internal/services/notifications_job"
+	"smart-chat/internal/services/slack"
 	userService "smart-chat/internal/services/user"
 
 	"github.com/gin-gonic/gin"
@@ -18,9 +19,9 @@ func RegisterRoutes(group *gin.RouterGroup, indian_travellers *indian_travellers
 	group.GET("/receive", handlers.ReceiveMessageHandler)
 }
 
-func RegisterV2Routes(group *gin.RouterGroup, convService *conversation.ConversationService, jobService *notifications_job.JobService) {
+func RegisterV2Routes(group *gin.RouterGroup, convService *conversation.ConversationService, jobService *notifications_job.JobService, slackService *slack.SlackService) {
 
-	group.POST("/start", handlers.StartConversationHandler(convService))
+	group.POST("/start", handlers.StartConversationHandler(convService, slackService))
 	group.GET("/messages", handlers.GetConversationHandler(convService))
 
 	group.POST("/message",

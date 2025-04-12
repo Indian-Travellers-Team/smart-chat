@@ -18,6 +18,7 @@ import (
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/human"
 	notifications_job "smart-chat/internal/services/notifications_job"
+	"smart-chat/internal/services/slack"
 	userService "smart-chat/internal/services/user"
 	utils "smart-chat/internal/utils"
 
@@ -76,10 +77,11 @@ func main() {
 	conversationService := conversation.NewConversationService(db)
 	notifClient := notification.NewClient(cfg.NotificationServiceURL)
 	jobService := notifications_job.NewJobService(notifClient, db)
+	slackService := slack.NewSlackService(cfg.SlackNotificationURL, cfg.SlackAlertURL, db)
 
 	chatGroupV2 := v2.Group("/chat")
 	chatGroupV2.Use(middleware.AuthSessionMiddleware(db))
-	routes.RegisterV2Routes(chatGroupV2, conversationService, jobService)
+	routes.RegisterV2Routes(chatGroupV2, conversationService, jobService, slackService)
 
 	conversationHistoryService := convHistory.NewConvHistoryService(db)
 	us := userService.NewUserService(db)

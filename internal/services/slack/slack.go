@@ -56,7 +56,7 @@ func (s *SlackService) SendSlackNotification(message string) (bool, error) {
 // It returns a boolean indicating success and an error if any.
 func (s *SlackService) SendSlackAlert(message string) (bool, error) {
 	payload := map[string]string{
-		"text": fmt.Sprintf("service:indian_travellers_cms -- %s", message),
+		"text": fmt.Sprintf("service:smart_chat_backend -- %s", message),
 	}
 
 	data, err := json.Marshal(payload)

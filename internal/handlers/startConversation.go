@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"smart-chat/internal/models"
 	"smart-chat/internal/services/conversation"
@@ -19,6 +20,7 @@ func StartConversationHandler(conversationService *conversation.ConversationServ
 
 		authSession, ok := session.(models.Session)
 		if !ok {
+			slackService.SendSlackAlertAsync(fmt.Sprintf("Failed to cast session to %v", session))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error - User casting issue"})
 			return
 		}
@@ -32,6 +34,7 @@ func StartConversationHandler(conversationService *conversation.ConversationServ
 		// Handle the session/message using the ConversationService. Here, authUser.ID could be used to find or start a session.
 		response, err := conversationService.HandleSession(authSession.ID, userInput, models.MessageTypeUserFix, whatsapp)
 		if err != nil {
+			slackService.SendSlackAlertAsync("Failed in start conversation with error: " + err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return
 		}

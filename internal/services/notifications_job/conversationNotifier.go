@@ -24,6 +24,14 @@ func NewJobService(client *notification.Client, db *gorm.DB) *JobService {
 	}
 }
 
+func (js *JobService) CreateUserNotification(session models.Session, slackService *slack.SlackService) {
+
+	if err := js.notifClient.CreateUserEvent(session.User.Name, session.User.Mobile); err != nil {
+		slackService.SendSlackAlertAsync(fmt.Sprintf("failed to create user: *%s* with mobile *%s*", session.User.Name, session.User.Mobile))
+		log.Printf("failed to send notification: %v", err)
+	}
+}
+
 // SendConversationNotification is the background job that sends a conversation notification.
 func (js *JobService) SendConversationNotification(userInput, botResponse string, session models.Session, slackService *slack.SlackService) {
 	var parsed struct {

@@ -26,7 +26,7 @@ func RegisterV2Routes(
 	slackService *slack.SlackService,
 ) {
 
-	group.POST("/start", handlers.StartConversationHandler(convService, slackService))
+	group.POST("/start", handlers.StartConversationHandler(convService, jobService, slackService))
 	group.GET("/messages", handlers.GetConversationHandler(convService))
 
 	group.POST("/message",

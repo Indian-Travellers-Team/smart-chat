@@ -5,12 +5,17 @@ import (
 	"net/http"
 	"smart-chat/internal/models"
 	"smart-chat/internal/services/conversation"
+	"smart-chat/internal/services/notifications_job"
 	"smart-chat/internal/services/slack"
 
 	"github.com/gin-gonic/gin"
 )
 
-func StartConversationHandler(conversationService *conversation.ConversationService, slackService *slack.SlackService) gin.HandlerFunc {
+func StartConversationHandler(
+	conversationService *conversation.ConversationService,
+	jobService *notifications_job.JobService,
+	slackService *slack.SlackService,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session, exists := c.Get("session")
 		if !exists {
@@ -37,6 +42,11 @@ func StartConversationHandler(conversationService *conversation.ConversationServ
 			slackService.SendSlackAlertAsync("Failed in start conversation with error: " + err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to handle session"})
 			return
+		}
+
+		if whatsapp {
+			// Run create user the notification job in the background.
+			go jobService.CreateUserNotification(authSession, slackService)
 		}
 
 		slackService.NotifyNewConversation(authSession, whatsapp)

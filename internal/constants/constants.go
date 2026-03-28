@@ -7,8 +7,11 @@ const (
 	// Default query parameter values.
 	DefaultPageStr  = "1"
 	DefaultLimitStr = "20"
+	DefaultSortStr  = "asc"
 	DefaultPage     = 1
 	DefaultLimit    = 20
+	SortAsc         = "asc"
+	SortDesc        = "desc"
 
 	// Error messages.
 	ErrInvalidStartDate = "Invalid start date format"

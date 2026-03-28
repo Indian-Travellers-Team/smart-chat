@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"smart-chat/internal/constants"
@@ -58,6 +59,11 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 			limit = constants.DefaultLimit
 		}
 
+		sortOrder := strings.ToLower(c.DefaultQuery("sort", constants.DefaultSortStr))
+		if sortOrder != constants.SortAsc && sortOrder != constants.SortDesc {
+			sortOrder = constants.DefaultSortStr
+		}
+
 		offset := (page - 1) * limit
 
 		// 4. Fetch total count (for pagination metadata).
@@ -69,7 +75,7 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 		}
 
 		// 5. Fetch the paginated conversations.
-		conversations, err := historyService.GetConversations(offset, limit, specs...)
+		conversations, err := historyService.GetConversationsWithSort(offset, limit, sortOrder, specs...)
 		if err != nil {
 			log.Printf("Error fetching conversations: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching conversations"})

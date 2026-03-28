@@ -1,6 +1,9 @@
 package convHistory
 
 import (
+	"strings"
+
+	"smart-chat/internal/constants"
 	"smart-chat/internal/models"
 	spec "smart-chat/internal/services/conversation_history/specification"
 
@@ -17,6 +20,16 @@ func NewConvHistoryService(db *gorm.DB) *ConvHistoryService {
 
 // GetConversations fetches conversations with optional specs, offset, and limit.
 func (chs *ConvHistoryService) GetConversations(offset, limit int, specs ...spec.Specification) ([]models.Conversation, error) {
+	return chs.GetConversationsWithSort(offset, limit, constants.DefaultSortStr, specs...)
+}
+
+// GetConversationsWithSort fetches conversations with optional specs, offset, limit, and sort order.
+func (chs *ConvHistoryService) GetConversationsWithSort(offset, limit int, sortOrder string, specs ...spec.Specification) ([]models.Conversation, error) {
+	sortOrder = strings.ToLower(sortOrder)
+	if sortOrder != constants.SortAsc && sortOrder != constants.SortDesc {
+		sortOrder = constants.DefaultSortStr
+	}
+
 	dbQuery := chs.db.Model(&models.Conversation{})
 
 	// Apply each specification to the query
@@ -29,6 +42,7 @@ func (chs *ConvHistoryService) GetConversations(offset, limit int, specs ...spec
 		Preload("MessagePairs").
 		Preload("FunctionCalls").
 		Preload("Session.User").
+		Order("conversations.created_at " + sortOrder).
 		Offset(offset).
 		Limit(limit).
 		Find(&conversations).Error

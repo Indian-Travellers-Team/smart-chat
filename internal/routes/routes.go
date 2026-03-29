@@ -3,6 +3,7 @@ package routes
 import (
 	"smart-chat/external/indian_travellers"
 	"smart-chat/internal/handlers"
+	"smart-chat/internal/services/analytics"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/human"
@@ -36,6 +37,7 @@ func RegisterV2Routes(
 func ClientRoutes(
 	group *gin.RouterGroup,
 	convHistoryService *convHistory.ConvHistoryService,
+	analyticsService *analytics.AnalyticsService,
 	us *userService.UserService,
 	humanService *human.HumanService,
 	jobService *notifications_job.JobService,
@@ -44,6 +46,7 @@ func ClientRoutes(
 	group.POST("/login", handlers.ClientAdminLoginHandler())
 	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService))
 	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService))
+	group.GET("/analytics/conversations/last-30-days", handlers.GetConversationsCountLast30DaysHandler(analyticsService))
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
 	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService, slackService))
 }

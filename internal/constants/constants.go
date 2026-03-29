@@ -14,9 +14,12 @@ const (
 	SortDesc        = "desc"
 
 	// Error messages.
-	ErrInvalidStartDate = "Invalid start date format"
-	ErrInvalidEndDate   = "Invalid end date format"
+	ErrInvalidStartDate      = "Invalid start date format"
+	ErrInvalidEndDate        = "Invalid end date format"
 	ErrInvalidConversationID = "Invalid conversation ID"
+	ErrDateRangeRequired     = "Both startdate and enddate are required"
+	ErrInvalidDateRange      = "enddate should be greater than or equal to startdate"
+	ErrDateRangeExceedsLimit = "Date range cannot exceed 30 days"
 
 	WhatsAppSource = "whatsapp"
 

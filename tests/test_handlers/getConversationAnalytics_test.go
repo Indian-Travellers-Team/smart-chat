@@ -20,9 +20,19 @@ import (
 type analyticsResponse struct {
 	Days   int `json:"days"`
 	Series []struct {
-		Date  string `json:"date"`
-		Count int64  `json:"count"`
+		Date            string `json:"date"`
+		Count           int64  `json:"count"`
+		ConversationIDs []uint `json:"conversationIds"`
 	} `json:"series"`
+}
+
+type dashboardConversationSummaryResponse struct {
+	TotalConversations        int64   `json:"totalConversations"`
+	CurrentWeekConversations  int64   `json:"currentWeekConversations"`
+	PreviousWeekConversations int64   `json:"previousWeekConversations"`
+	WeeklyChangePercentage    float64 `json:"weeklyChangePercentage"`
+	Trend                     string  `json:"trend"`
+	PeriodLabel               string  `json:"periodLabel"`
 }
 
 func TestGetConversationsCountLast30DaysHandler(t *testing.T) {
@@ -65,14 +75,18 @@ func TestGetConversationsCountLast30DaysHandler(t *testing.T) {
 	assert.Len(t, response.Series, 30)
 
 	countByDate := make(map[string]int64, len(response.Series))
+	conversationIDsByDate := make(map[string][]uint, len(response.Series))
 	var totalCount int64
 	for _, item := range response.Series {
 		countByDate[item.Date] = item.Count
+		conversationIDsByDate[item.Date] = item.ConversationIDs
 		totalCount += item.Count
 	}
 
 	assert.Equal(t, int64(1), countByDate[conversationOneTime.UTC().Format("2006-01-02")])
 	assert.Equal(t, int64(1), countByDate[conversationTwoTime.UTC().Format("2006-01-02")])
+	assert.Contains(t, conversationIDsByDate[conversationOneTime.UTC().Format("2006-01-02")], conversationOne.ID)
+	assert.Contains(t, conversationIDsByDate[conversationTwoTime.UTC().Format("2006-01-02")], conversationTwo.ID)
 	assert.Equal(t, int64(2), totalCount)
 }
 
@@ -114,12 +128,16 @@ func TestGetConversationsCountLast30DaysHandler_CustomRange(t *testing.T) {
 	assert.Len(t, response.Series, 10)
 
 	countByDate := make(map[string]int64, len(response.Series))
+	conversationIDsByDate := make(map[string][]uint, len(response.Series))
 	for _, item := range response.Series {
 		countByDate[item.Date] = item.Count
+		conversationIDsByDate[item.Date] = item.ConversationIDs
 	}
 
 	assert.Equal(t, int64(1), countByDate[insideRangeTime.UTC().Format("2006-01-02")])
 	assert.Equal(t, int64(0), countByDate[outsideRangeTime.UTC().Format("2006-01-02")])
+	assert.Contains(t, conversationIDsByDate[insideRangeTime.UTC().Format("2006-01-02")], insideRange.ID)
+	assert.Empty(t, conversationIDsByDate[outsideRangeTime.UTC().Format("2006-01-02")])
 }
 
 func TestGetConversationsCountLast30DaysHandler_MissingRangeParam(t *testing.T) {
@@ -156,4 +174,59 @@ func TestGetConversationsCountLast30DaysHandler_RangeExceeds30Days(t *testing.T)
 
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 	assert.Contains(t, recorder.Body.String(), constants.ErrDateRangeExceedsLimit)
+}
+
+func TestGetDashboardConversationSummaryHandler(t *testing.T) {
+	db, teardown := utils.SetupTestDB()
+	defer teardown()
+
+	_, session, baseConversation, _ := utils.SetupTestEntities(db)
+	assert.NoError(t, db.Model(&baseConversation).Update("created_at", time.Now().AddDate(0, 0, -40)).Error)
+
+	now := time.Now()
+	currentWeekStart := testStartOfWeek(now)
+	previousWeekStart := currentWeekStart.AddDate(0, 0, -7)
+
+	currentWeekConversationOne := models.Conversation{SessionID: session.ID}
+	assert.NoError(t, db.Create(&currentWeekConversationOne).Error)
+	assert.NoError(t, db.Model(&currentWeekConversationOne).Update("created_at", currentWeekStart.Add(2*time.Hour)).Error)
+
+	currentWeekConversationTwo := models.Conversation{SessionID: session.ID}
+	assert.NoError(t, db.Create(&currentWeekConversationTwo).Error)
+	assert.NoError(t, db.Model(&currentWeekConversationTwo).Update("created_at", currentWeekStart.AddDate(0, 0, 1).Add(3*time.Hour)).Error)
+
+	previousWeekConversation := models.Conversation{SessionID: session.ID}
+	assert.NoError(t, db.Create(&previousWeekConversation).Error)
+	assert.NoError(t, db.Model(&previousWeekConversation).Update("created_at", previousWeekStart.Add(4*time.Hour)).Error)
+
+	analyticsService := analytics.NewAnalyticsService(db)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/analytics/dashboard/conversations-summary", handlers.GetDashboardConversationSummaryHandler(analyticsService))
+
+	req, _ := http.NewRequest(http.MethodGet, "/analytics/dashboard/conversations-summary", nil)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	var response dashboardConversationSummaryResponse
+	assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	assert.Equal(t, int64(4), response.TotalConversations)
+	assert.Equal(t, int64(2), response.CurrentWeekConversations)
+	assert.Equal(t, int64(1), response.PreviousWeekConversations)
+	assert.Equal(t, 100.0, response.WeeklyChangePercentage)
+	assert.Equal(t, "up", response.Trend)
+	assert.Equal(t, "this week", response.PeriodLabel)
+}
+
+func testStartOfWeek(now time.Time) time.Time {
+	weekday := int(now.Weekday())
+	if weekday == 0 {
+		weekday = 7
+	}
+
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	return start.AddDate(0, 0, -(weekday - 1))
 }

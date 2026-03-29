@@ -67,3 +67,15 @@ func GetConversationsCountLast30DaysHandler(analyticsService *analytics.Analytic
 		})
 	}
 }
+
+func GetDashboardConversationSummaryHandler(analyticsService *analytics.AnalyticsService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		summary, err := analyticsService.GetDashboardConversationSummary(time.Now())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching dashboard analytics"})
+			return
+		}
+
+		c.JSON(http.StatusOK, summary)
+	}
+}

@@ -16,6 +16,7 @@ const (
 	// Error messages.
 	ErrInvalidStartDate = "Invalid start date format"
 	ErrInvalidEndDate   = "Invalid end date format"
+	ErrInvalidConversationID = "Invalid conversation ID"
 
 	WhatsAppSource = "whatsapp"
 

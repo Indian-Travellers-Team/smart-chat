@@ -10,5 +10,5 @@ type ByID struct {
 }
 
 func (spec ByID) Apply(db *gorm.DB) *gorm.DB {
-	return db.Where("id = ?", spec.ID)
+	return db.Where("conversations.id = ?", spec.ID)
 }

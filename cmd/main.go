@@ -14,6 +14,7 @@ import (
 	middleware "smart-chat/internal/middlewares"
 	"smart-chat/internal/models"
 	"smart-chat/internal/routes"
+	"smart-chat/internal/services/analytics"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/human"
@@ -84,12 +85,13 @@ func main() {
 	routes.RegisterV2Routes(chatGroupV2, conversationService, jobService, slackService)
 
 	conversationHistoryService := convHistory.NewConvHistoryService(db)
+	analyticsService := analytics.NewAnalyticsService(db)
 	us := userService.NewUserService(db)
 
 	humanService := human.NewHumanService(db)
 
 	clientGroupV2 := v2.Group("/client")
-	routes.ClientRoutes(clientGroupV2, conversationHistoryService, us, humanService, jobService, slackService)
+	routes.ClientRoutes(clientGroupV2, conversationHistoryService, analyticsService, us, humanService, jobService, slackService)
 
 	// Start cron jobs
 	//cron_jobs.StartCronJobs(db)

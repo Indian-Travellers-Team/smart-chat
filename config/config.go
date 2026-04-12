@@ -41,6 +41,7 @@ func Load() *Config {
 		SecretToken:            "secret_token",
 		IndianTeavellersURL:    "http://127.0.0.1:8000",
 		NotificationServiceURL: "http://127.0.0.1:8001",
+		AuthServiceBaseURL:     "http://127.0.0.1:8002",
 		SlackNotificationURL:   "https://hooks.slack.com/services/xx",
 		SlackAlertURL:          "https://hooks.slack.com/services/xx",
 	}
@@ -80,6 +81,7 @@ func Load() *Config {
 		config.SecretToken = getParameter("WASecretToken")
 		config.IndianTeavellersURL = getParameter("IndianTeavellersURL")
 		config.NotificationServiceURL = getParameter("NotificationServiceURL")
+		config.AuthServiceBaseURL = getParameter("AuthServiceBaseURL")
 		config.SlackNotificationURL = getParameter("SLACK_NOTIFICATION_URL")
 		config.SlackAlertURL = getParameter("SLACK_ALERT_URL")
 	} else {
@@ -97,6 +99,7 @@ func Load() *Config {
 			SecretToken:            "secret_token",
 			IndianTeavellersURL:    "http://127.0.0.1:8000",
 			NotificationServiceURL: "http://127.0.0.1:8001",
+			AuthServiceBaseURL:     "http://127.0.0.1:8002",
 			SlackNotificationURL:   "https://hooks.slack.com/services/xx",
 			SlackAlertURL:          "https://hooks.slack.com/services/xx",
 		}

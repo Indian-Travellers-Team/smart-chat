@@ -21,3 +21,12 @@ This repository contains the backend service for the Indian Travellers chatbot a
 - **Slack API:** Used for sending error notifications and alerts.
 - **Indian Travellers APIs:** Custom API client integration to fetch travel packages and trip details.
 - **Internal Services:** HumanService and other service layers handle business logic and data management.
+
+## API documentation
+
+The service now exposes an embedded OpenAPI contract and browser docs UI:
+
+- `GET /openapi.yaml` serves the source OpenAPI spec.
+- `GET /docs/` serves an interactive ReDoc view.
+
+The source of truth for the contract lives in `docs/openapi.yaml`. A route-coverage test also checks that every registered API path and method is represented there so the inventory does not silently drift.

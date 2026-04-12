@@ -10,6 +10,7 @@ import (
 	"smart-chat/auth"
 	"smart-chat/cache"
 	"smart-chat/config"
+	apidocs "smart-chat/docs"
 	"smart-chat/external/indian_travellers"
 	"smart-chat/external/notification"
 	"smart-chat/internal/authservice/zitadel"
@@ -58,13 +59,14 @@ func main() {
 		&models.FunctionCall{},
 		&models.Button{},
 		&models.ConvAnalysis{},
-			&models.AuthUserConversation{},
+		&models.AuthUserConversation{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
 	router := gin.Default()
+	apidocs.RegisterRoutes(router)
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}

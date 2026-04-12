@@ -66,7 +66,9 @@ func main() {
 	}
 
 	router := gin.Default()
-	apidocs.RegisterRoutes(router)
+	if err := apidocs.RegisterRoutes(router, cfg.SwaggerUsername, cfg.SwaggerPassword); err != nil {
+		log.Fatalf("Failed to register API docs routes: %v", err)
+	}
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}

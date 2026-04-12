@@ -2,7 +2,9 @@ package apidocs
 
 import (
 	_ "embed"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,10 +17,19 @@ var (
 	redocHTML []byte
 )
 
-func RegisterRoutes(router gin.IRoutes) {
-	router.GET("/openapi.yaml", serveOpenAPISpec)
-	router.GET("/docs", redirectToDocsIndex)
-	router.GET("/docs/", serveDocsUI)
+func RegisterRoutes(router gin.IRouter, username, password string) error {
+	username = strings.TrimSpace(username)
+	password = strings.TrimSpace(password)
+	if username == "" || password == "" {
+		return fmt.Errorf("swagger docs credentials are required")
+	}
+
+	docs := router.Group("", gin.BasicAuth(gin.Accounts{username: password}))
+	docs.GET("/openapi.yaml", serveOpenAPISpec)
+	docs.GET("/docs", redirectToDocsIndex)
+	docs.GET("/docs/", serveDocsUI)
+
+	return nil
 }
 
 func serveOpenAPISpec(c *gin.Context) {

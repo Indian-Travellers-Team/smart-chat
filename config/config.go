@@ -44,6 +44,8 @@ func Load() *Config {
 		AuthServiceBaseURL:     "http://127.0.0.1:8002",
 		SlackNotificationURL:   "https://hooks.slack.com/services/xx",
 		SlackAlertURL:          "https://hooks.slack.com/services/xx",
+		SwaggerUsername:        "swagger",
+		SwaggerPassword:        "swagger",
 	}
 	if os.Getenv("SMART_CHAT_ENV") == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -84,6 +86,8 @@ func Load() *Config {
 		config.AuthServiceBaseURL = getParameter("AuthServiceBaseURL")
 		config.SlackNotificationURL = getParameter("SLACK_NOTIFICATION_URL")
 		config.SlackAlertURL = getParameter("SLACK_ALERT_URL")
+		config.SwaggerUsername = getParameter("SwaggerUsername")
+		config.SwaggerPassword = getParameter("SwaggerPassword")
 	} else {
 		gin.SetMode(gin.DebugMode)
 		return &Config{
@@ -102,6 +106,8 @@ func Load() *Config {
 			AuthServiceBaseURL:     "http://127.0.0.1:8002",
 			SlackNotificationURL:   "https://hooks.slack.com/services/xx",
 			SlackAlertURL:          "https://hooks.slack.com/services/xx",
+			SwaggerUsername:        "swagger",
+			SwaggerPassword:        "swagger",
 		}
 	}
 

@@ -26,6 +26,23 @@ type AuthPrincipal struct {
 	RoleName string
 }
 
+type UpdateConversationTrackingInput struct {
+	AuthUserID     uint
+	ConversationID uint
+	Started        *bool
+	Resolved       *bool
+	Comments       *string
+}
+
+type ConversationTracking struct {
+	AuthUserID     uint
+	ConversationID uint
+	Started        bool
+	Resolved       bool
+	Comments       string
+	AgentName      *string
+}
+
 func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
@@ -81,6 +98,68 @@ func (s *Service) LinkConversations(authUserID uint, conversationIDs []uint) (in
 	}
 
 	return int(result.RowsAffected), nil
+}
+
+func (s *Service) UpdateConversationTracking(input UpdateConversationTrackingInput) (*ConversationTracking, error) {
+	if input.AuthUserID == 0 {
+		return nil, errors.New("user_id is required")
+	}
+	if input.ConversationID == 0 {
+		return nil, errors.New("conversation_id is required")
+	}
+
+	updates := make(map[string]any)
+	if input.Started != nil {
+		updates["started"] = *input.Started
+	}
+	if input.Resolved != nil {
+		updates["resolved"] = *input.Resolved
+	}
+	if input.Comments != nil {
+		updates["comments"] = strings.TrimSpace(*input.Comments)
+	}
+	if len(updates) == 0 {
+		return nil, errors.New("at least one field must be provided for update")
+	}
+
+	result := s.db.Model(&models.AuthUserConversation{}).
+		Where("auth_user_id = ? AND conversation_id = ?", input.AuthUserID, input.ConversationID).
+		Updates(updates)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	type trackingRow struct {
+		AuthUserID     uint    `gorm:"column:auth_user_id"`
+		ConversationID uint    `gorm:"column:conversation_id"`
+		Started        bool    `gorm:"column:started"`
+		Resolved       bool    `gorm:"column:resolved"`
+		Comments       string  `gorm:"column:comments"`
+		AgentName      *string `gorm:"column:name"`
+	}
+
+	var row trackingRow
+	err := s.db.
+		Table("auth_user_conversation").
+		Select("auth_user_conversation.auth_user_id, auth_user_conversation.conversation_id, auth_user_conversation.started, auth_user_conversation.resolved, auth_user_conversation.comments, auth_users.name").
+		Joins("JOIN auth_users ON auth_users.user_id = auth_user_conversation.auth_user_id").
+		Where("auth_user_conversation.auth_user_id = ? AND auth_user_conversation.conversation_id = ?", input.AuthUserID, input.ConversationID).
+		Take(&row).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &ConversationTracking{
+		AuthUserID:     row.AuthUserID,
+		ConversationID: row.ConversationID,
+		Started:        row.Started,
+		Resolved:       row.Resolved,
+		Comments:       row.Comments,
+		AgentName:      row.AgentName,
+	}, nil
 }
 
 func (s *Service) IsAdminByZitadelUserID(zitadelUserID string) (bool, error) {

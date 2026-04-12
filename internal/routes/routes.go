@@ -56,4 +56,5 @@ func ClientRoutes(
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
 	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService, slackService))
 	group.POST("/conversations/link", handlers.LinkAuthUserConversationsHandler(authUserConversationService, tokenValidator))
+	group.PATCH("/conversations/tracking", handlers.UpdateAuthUserConversationHandler(authUserConversationService, tokenValidator, slackService))
 }

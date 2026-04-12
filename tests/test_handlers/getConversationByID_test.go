@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -16,6 +17,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
+
+type conversationByIDResponse struct {
+	ConversationID      uint `json:"conversationId"`
+	Started             bool `json:"started"`
+	Resolved            bool `json:"resolved"`
+	Comments            string `json:"comments"`
+	ConversationHistory []struct {
+		UserMessage string `json:"UserMessage"`
+		BotMessage  string `json:"BotMessage"`
+	} `json:"conversationHistory"`
+}
 
 func setupConversationByIDRouter(db *gorm.DB, zitadelUserID string) *gin.Engine {
 	historyService := convHistory.NewConvHistoryService(db)
@@ -67,8 +79,16 @@ func TestGetConversationByIDHandler_AllowsAdmin(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusOK, recorder.Code)
-	assert.Contains(t, recorder.Body.String(), "Hello")
-	assert.Contains(t, recorder.Body.String(), "Hi there!")
+
+	var response conversationByIDResponse
+	assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	assert.Equal(t, conv.ID, response.ConversationID)
+	assert.False(t, response.Started)
+	assert.False(t, response.Resolved)
+	assert.Equal(t, "", response.Comments)
+	assert.Len(t, response.ConversationHistory, 1)
+	assert.Equal(t, "Hello", response.ConversationHistory[0].UserMessage)
+	assert.Equal(t, "Hi there!", response.ConversationHistory[0].BotMessage)
 }
 
 func TestGetConversationByIDHandler_AllowsAssignedAgent(t *testing.T) {
@@ -77,10 +97,14 @@ func TestGetConversationByIDHandler_AllowsAssignedAgent(t *testing.T) {
 
 	_, _, conv, _ := utils.SetupTestEntities(db)
 	agent := setupAuthUserWithRole(t, db, "AGENT", "zitadel-agent-conversation", "Agent Conversation")
+	comments := "Waiting for customer reply"
 
 	assert.NoError(t, db.Create(&models.AuthUserConversation{
 		AuthUserID:     agent.UserID,
 		ConversationID: conv.ID,
+		Started:        true,
+		Resolved:       true,
+		Comments:       comments,
 	}).Error)
 
 	router := setupConversationByIDRouter(db, "zitadel-agent-conversation")
@@ -91,8 +115,50 @@ func TestGetConversationByIDHandler_AllowsAssignedAgent(t *testing.T) {
 	router.ServeHTTP(recorder, req)
 
 	assert.Equal(t, http.StatusOK, recorder.Code)
-	assert.Contains(t, recorder.Body.String(), "Hello")
-	assert.Contains(t, recorder.Body.String(), "Hi there!")
+
+	var response conversationByIDResponse
+	assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	assert.Equal(t, conv.ID, response.ConversationID)
+	assert.True(t, response.Started)
+	assert.True(t, response.Resolved)
+	assert.Equal(t, comments, response.Comments)
+	assert.Len(t, response.ConversationHistory, 1)
+	assert.Equal(t, "Hello", response.ConversationHistory[0].UserMessage)
+	assert.Equal(t, "Hi there!", response.ConversationHistory[0].BotMessage)
+}
+
+func TestGetConversationByIDHandler_AdminGetsAssignedTrackingFields(t *testing.T) {
+	db, teardown := utils.SetupTestDB()
+	defer teardown()
+
+	_, _, conv, _ := utils.SetupTestEntities(db)
+	setupAuthUserWithRole(t, db, "ADMIN", "zitadel-admin-conversation-tracking", "Admin Conversation Tracking")
+	agent := setupAuthUserWithRole(t, db, "AGENT", "zitadel-agent-conversation-tracking", "Agent Conversation Tracking")
+	comments := "Escalated to hotel desk"
+
+	assert.NoError(t, db.Create(&models.AuthUserConversation{
+		AuthUserID:     agent.UserID,
+		ConversationID: conv.ID,
+		Started:        true,
+		Resolved:       false,
+		Comments:       comments,
+	}).Error)
+
+	router := setupConversationByIDRouter(db, "zitadel-admin-conversation-tracking")
+	req, _ := http.NewRequest(http.MethodGet, "/conversation/"+strconv.FormatUint(uint64(conv.ID), 10), nil)
+	req.Header.Set("Authorization", "Bearer admin-token")
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code)
+
+	var response conversationByIDResponse
+	assert.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &response))
+	assert.Equal(t, conv.ID, response.ConversationID)
+	assert.True(t, response.Started)
+	assert.False(t, response.Resolved)
+	assert.Equal(t, comments, response.Comments)
 }
 
 func TestGetConversationByIDHandler_HidesConversationFromUnassignedAgent(t *testing.T) {

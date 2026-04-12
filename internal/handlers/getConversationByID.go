@@ -77,6 +77,27 @@ func GetConversationByIDHandler(
 		}
 
 		conversation := conversations[0]
+		var trackingAuthUserID *uint
+		if roleName != "ADMIN" {
+			trackingAuthUserID = &principal.UserID
+		}
+
+		tracking, err := authUserConversationService.GetConversationTracking(conversation.ID, trackingAuthUserID)
+		if err != nil {
+			log.Printf("Error fetching conversation tracking: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching conversation tracking"})
+			return
+		}
+
+		started := false
+		resolved := false
+		comments := ""
+		if tracking != nil {
+			started = tracking.Started
+			resolved = tracking.Resolved
+			comments = tracking.Comments
+		}
+
 		formattedHistory := make([]gin.H, 0)
 		for _, messagePair := range conversation.MessagePairs {
 			if messagePair.Visible {
@@ -87,6 +108,12 @@ func GetConversationByIDHandler(
 			}
 		}
 
-		c.JSON(http.StatusOK, gin.H{"conversationHistory": formattedHistory})
+		c.JSON(http.StatusOK, gin.H{
+			"conversationId":      conversation.ID,
+			"started":             started,
+			"resolved":            resolved,
+			"comments":            comments,
+			"conversationHistory": formattedHistory,
+		})
 	}
 }

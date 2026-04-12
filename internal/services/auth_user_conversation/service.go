@@ -43,6 +43,15 @@ type ConversationTracking struct {
 	AgentName      *string
 }
 
+type conversationTrackingRow struct {
+	AuthUserID     uint    `gorm:"column:auth_user_id"`
+	ConversationID uint    `gorm:"column:conversation_id"`
+	Started        bool    `gorm:"column:started"`
+	Resolved       bool    `gorm:"column:resolved"`
+	Comments       string  `gorm:"column:comments"`
+	AgentName      *string `gorm:"column:name"`
+}
+
 func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
@@ -132,23 +141,31 @@ func (s *Service) UpdateConversationTracking(input UpdateConversationTrackingInp
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	type trackingRow struct {
-		AuthUserID     uint    `gorm:"column:auth_user_id"`
-		ConversationID uint    `gorm:"column:conversation_id"`
-		Started        bool    `gorm:"column:started"`
-		Resolved       bool    `gorm:"column:resolved"`
-		Comments       string  `gorm:"column:comments"`
-		AgentName      *string `gorm:"column:name"`
+	row, err := s.getConversationTrackingRow(input.ConversationID, &input.AuthUserID)
+	if err != nil {
+		return nil, err
 	}
 
-	var row trackingRow
-	err := s.db.
-		Table("auth_user_conversation").
-		Select("auth_user_conversation.auth_user_id, auth_user_conversation.conversation_id, auth_user_conversation.started, auth_user_conversation.resolved, auth_user_conversation.comments, auth_users.name").
-		Joins("JOIN auth_users ON auth_users.user_id = auth_user_conversation.auth_user_id").
-		Where("auth_user_conversation.auth_user_id = ? AND auth_user_conversation.conversation_id = ?", input.AuthUserID, input.ConversationID).
-		Take(&row).Error
+	return &ConversationTracking{
+		AuthUserID:     row.AuthUserID,
+		ConversationID: row.ConversationID,
+		Started:        row.Started,
+		Resolved:       row.Resolved,
+		Comments:       row.Comments,
+		AgentName:      row.AgentName,
+	}, nil
+}
+
+func (s *Service) GetConversationTracking(conversationID uint, authUserID *uint) (*ConversationTracking, error) {
+	if conversationID == 0 {
+		return nil, errors.New("conversation_id is required")
+	}
+
+	row, err := s.getConversationTrackingRow(conversationID, authUserID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -249,6 +266,28 @@ func (s *Service) GetAssignedAgentsByConversationIDs(conversationIDs []uint) (ma
 	}
 
 	return result, nil
+}
+
+func (s *Service) getConversationTrackingRow(conversationID uint, authUserID *uint) (*conversationTrackingRow, error) {
+	query := s.db.
+		Table("auth_user_conversation").
+		Select("auth_user_conversation.auth_user_id, auth_user_conversation.conversation_id, auth_user_conversation.started, auth_user_conversation.resolved, auth_user_conversation.comments, auth_users.name").
+		Joins("JOIN auth_users ON auth_users.user_id = auth_user_conversation.auth_user_id").
+		Where("auth_user_conversation.conversation_id = ?", conversationID)
+
+	if authUserID != nil {
+		query = query.Where("auth_user_conversation.auth_user_id = ?", *authUserID)
+	}
+
+	var row conversationTrackingRow
+	err := query.
+		Order("auth_user_conversation.created_at ASC").
+		Take(&row).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &row, nil
 }
 
 func dedupeUintIDs(ids []uint) []uint {

@@ -1,9 +1,11 @@
 package routes
 
 import (
+	"smart-chat/internal/authservice/zitadel"
 	"smart-chat/external/indian_travellers"
 	"smart-chat/internal/handlers"
 	"smart-chat/internal/services/analytics"
+	authUserConversation "smart-chat/internal/services/auth_user_conversation"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/human"
@@ -42,12 +44,17 @@ func ClientRoutes(
 	humanService *human.HumanService,
 	jobService *notifications_job.JobService,
 	slackService *slack.SlackService,
+	authUserConversationService *authUserConversation.Service,
+	tokenValidator zitadel.TokenValidator,
 ) {
 	group.POST("/login", handlers.ClientAdminLoginHandler())
-	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService))
-	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService))
+	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService, authUserConversationService, tokenValidator))
+	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService, authUserConversationService, tokenValidator))
 	group.GET("/analytics/dashboard/conversations-summary", handlers.GetDashboardConversationSummaryHandler(analyticsService))
 	group.GET("/analytics/conversations/last-30-days", handlers.GetConversationsCountLast30DaysHandler(analyticsService))
+	group.GET("/agents", handlers.GetAgentsHandler(authUserConversationService, tokenValidator))
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
 	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService, slackService))
+	group.POST("/conversations/link", handlers.LinkAuthUserConversationsHandler(authUserConversationService, tokenValidator))
+	group.PATCH("/conversations/tracking", handlers.UpdateAuthUserConversationHandler(authUserConversationService, tokenValidator, slackService))
 }

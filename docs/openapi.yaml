@@ -1,0 +1,1123 @@
+openapi: 3.0.3
+info:
+  title: smart-chat API
+  version: 2026-04-12
+  description: |
+    OpenAPI contract for the smart-chat backend.
+
+    This specification covers the currently registered public API surface for website chat,
+    v2 chat sessions, auth flows, and client/admin operations.
+servers:
+  - url: /
+tags:
+  - name: Auth V1
+  - name: Auth V2
+  - name: Chat V1
+  - name: Chat V2
+  - name: Client
+  - name: Analytics
+components:
+  securitySchemes:
+    AuthorizationHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Authorization header used by this service. Some endpoints expect the raw session token,
+        while client/admin endpoints also accept Bearer tokens.
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+        success:
+          type: boolean
+    SuccessFlag:
+      type: object
+      properties:
+        success:
+          type: boolean
+    InitLoginRequest:
+      type: object
+      required:
+        - name
+        - mobile
+      properties:
+        name:
+          type: string
+          example: Arun
+        mobile:
+          type: string
+          example: "+919876543210"
+    ValidateLoginRequest:
+      type: object
+      required:
+        - token
+        - otp
+      properties:
+        token:
+          type: string
+          example: temp-auth-token
+        otp:
+          type: string
+          example: "1234"
+    WhatsappLoginRequest:
+      type: object
+      required:
+        - name
+        - mobile
+        - secret_token
+      properties:
+        name:
+          type: string
+        mobile:
+          type: string
+        secret_token:
+          type: string
+    RefreshTokenRequest:
+      type: object
+      required:
+        - mobile
+        - secret_token
+      properties:
+        mobile:
+          type: string
+        secret_token:
+          type: string
+    AuthTokenResponse:
+      type: object
+      required:
+        - authToken
+      properties:
+        authToken:
+          type: string
+        success:
+          type: boolean
+          example: true
+    AccessTokenResponse:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          type: string
+        success:
+          type: boolean
+          example: true
+    ClientAdminLoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    ClientAdminLoginResponse:
+      type: object
+      required:
+        - authToken
+      properties:
+        authToken:
+          type: string
+    MessageRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: Suggest a family trip in May.
+    AddMessageRequest:
+      type: object
+      required:
+        - conversation_id
+        - message
+      properties:
+        conversation_id:
+          type: integer
+          format: int64
+        message:
+          type: string
+    LinkAuthUserConversationsRequest:
+      type: object
+      required:
+        - user_id
+        - conversation_ids
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        conversation_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+    UpdateTrackingRequest:
+      type: object
+      required:
+        - conversation_id
+      properties:
+        conversation_id:
+          type: integer
+          format: int64
+        started:
+          type: boolean
+        resolved:
+          type: boolean
+        comments:
+          type: string
+      description: Provide at least one of started, resolved, or comments.
+    AIResponseValue:
+      oneOf:
+        - type: string
+        - type: object
+          additionalProperties: true
+        - type: array
+          items:
+            type: object
+            additionalProperties: true
+    ResponseEnvelope:
+      type: object
+      properties:
+        response:
+          $ref: '#/components/schemas/AIResponseValue'
+        status:
+          type: string
+    MessagePair:
+      type: object
+      required:
+        - UserMessage
+        - BotMessage
+      properties:
+        UserMessage:
+          type: string
+        BotMessage:
+          type: string
+    ConversationHistoryResponse:
+      type: object
+      properties:
+        conversationHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePair'
+        error:
+          type: string
+    UserDetails:
+      type: object
+      properties:
+        name:
+          type: string
+        mobile:
+          type: string
+        source:
+          type: string
+        lastMessageTime:
+          type: string
+          format: date-time
+        totalMessages:
+          type: integer
+    AgentUser:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+    AgentsResponse:
+      type: object
+      required:
+        - agents
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentUser'
+    AssignedAgent:
+      type: object
+      nullable: true
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+    ConversationListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+        username:
+          type: string
+        mobile:
+          type: string
+        source:
+          type: string
+        assigned_agent:
+          $ref: '#/components/schemas/AssignedAgent'
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+          format: int64
+    ConversationListResponse:
+      type: object
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationListItem'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    DashboardConversationSummary:
+      type: object
+      properties:
+        totalConversations:
+          type: integer
+          format: int64
+        currentWeekConversations:
+          type: integer
+          format: int64
+        previousWeekConversations:
+          type: integer
+          format: int64
+        weeklyChangePercentage:
+          type: number
+          format: double
+        trend:
+          type: string
+        periodLabel:
+          type: string
+    DailyConversationCount:
+      type: object
+      properties:
+        date:
+          type: string
+          example: 2026-04-12
+        count:
+          type: integer
+          format: int64
+        conversationIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+    ConversationSeriesResponse:
+      type: object
+      properties:
+        days:
+          type: integer
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyConversationCount'
+    LinkConversationsResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        linked_count:
+          type: integer
+    TrackingAgent:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+    TrackingConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        started:
+          type: boolean
+        resolved:
+          type: boolean
+        comments:
+          type: string
+    UpdateTrackingResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        agent:
+          $ref: '#/components/schemas/TrackingAgent'
+        conversation:
+          $ref: '#/components/schemas/TrackingConversation'
+paths:
+  /v1/auth/init-login:
+    post:
+      tags: [Auth V1]
+      summary: Start the v1 OTP login flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitLoginRequest'
+      responses:
+        '200':
+          description: OTP initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Login initiation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/auth/validate-login:
+    post:
+      tags: [Auth V1]
+      summary: Complete the v1 OTP login flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateLoginRequest'
+      responses:
+        '200':
+          description: Login validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Login validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/chat/ping:
+    get:
+      tags: [Chat V1]
+      summary: Health check for the v1 chat API
+      responses:
+        '200':
+          description: Pong response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: pong
+  /v1/chat/send:
+    post:
+      tags: [Chat V1]
+      summary: Send a v1 chat message
+      security:
+        - AuthorizationHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '200':
+          description: Message processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseEnvelope'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or expired authorization token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Processing failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/chat/receive:
+    get:
+      tags: [Chat V1]
+      summary: Fetch v1 conversation history
+      security:
+        - AuthorizationHeader: []
+      responses:
+        '200':
+          description: Conversation history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationHistoryResponse'
+        '401':
+          description: Missing or expired authorization token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/auth/init-login:
+    post:
+      tags: [Auth V2]
+      summary: Start the v2 OTP login flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitLoginRequest'
+      responses:
+        '200':
+          description: OTP initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Login initiation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/auth/validate-login:
+    post:
+      tags: [Auth V2]
+      summary: Complete the v2 OTP login flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateLoginRequest'
+      responses:
+        '200':
+          description: Login validated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Login validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/auth/login-for-whatsapp:
+    post:
+      tags: [Auth V2]
+      summary: Create a WhatsApp session without OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsappLoginRequest'
+      responses:
+        '200':
+          description: Login created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessTokenResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Login failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/auth/refresh-token:
+    post:
+      tags: [Auth V2]
+      summary: Refresh an expired WhatsApp session token
+      security:
+        - AuthorizationHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed or refresh not needed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AccessTokenResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing authorization header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Refresh failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/chat/start:
+    post:
+      tags: [Chat V2]
+      summary: Start a new v2 conversation session
+      security:
+        - AuthorizationHeader: []
+      parameters:
+        - in: query
+          name: whatsapp
+          schema:
+            type: boolean
+            default: false
+          description: Marks the interaction as a WhatsApp conversation.
+      responses:
+        '200':
+          description: Conversation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseEnvelope'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/chat/messages:
+    get:
+      tags: [Chat V2]
+      summary: Fetch the current v2 conversation history
+      security:
+        - AuthorizationHeader: []
+      responses:
+        '200':
+          description: Conversation history or no conversation message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationHistoryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/chat/message:
+    post:
+      tags: [Chat V2]
+      summary: Send a message in the active v2 conversation
+      security:
+        - AuthorizationHeader: []
+      parameters:
+        - in: query
+          name: whatsapp
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '200':
+          description: Message processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseEnvelope'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/login:
+    post:
+      tags: [Client]
+      summary: Generate a client admin token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientAdminLoginRequest'
+      responses:
+        '200':
+          description: Client token generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientAdminLoginResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Token generation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/conversation/{id}:
+    get:
+      tags: [Client]
+      summary: Fetch full conversation history by conversation ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Conversation history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationHistoryResponse'
+        '400':
+          description: Invalid conversation ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/conversations:
+    get:
+      tags: [Client]
+      summary: List conversations with filters and pagination
+      security:
+        - AuthorizationHeader: []
+      parameters:
+        - in: query
+          name: startdate
+          schema:
+            type: string
+            example: 2026-04-01
+          description: Inclusive start date.
+        - in: query
+          name: enddate
+          schema:
+            type: string
+            example: 2026-04-12
+          description: Inclusive end date.
+        - in: query
+          name: mobile
+          schema:
+            type: string
+        - in: query
+          name: source
+          schema:
+            type: string
+        - in: query
+          name: conversationid
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Paginated conversation list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationListResponse'
+        '400':
+          description: Invalid filter or pagination input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Auth user not found or forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/analytics/dashboard/conversations-summary:
+    get:
+      tags: [Analytics]
+      summary: Fetch dashboard-level conversation summary metrics
+      responses:
+        '200':
+          description: Summary metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardConversationSummary'
+        '500':
+          description: Fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/analytics/conversations/last-30-days:
+    get:
+      tags: [Analytics]
+      summary: Fetch daily conversation counts for the last 30 days or a bounded custom range
+      parameters:
+        - in: query
+          name: startdate
+          schema:
+            type: string
+            example: 2026-04-01
+        - in: query
+          name: enddate
+          schema:
+            type: string
+            example: 2026-04-12
+      responses:
+        '200':
+          description: Daily counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationSeriesResponse'
+        '400':
+          description: Invalid date range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/agents:
+    get:
+      tags: [Client]
+      summary: List assignable agents and admins
+      security:
+        - AuthorizationHeader: []
+      responses:
+        '200':
+          description: Agent list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentsResponse'
+        '401':
+          description: Invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/userdetails:
+    get:
+      tags: [Client]
+      summary: Fetch user details for a conversation
+      parameters:
+        - in: query
+          name: conv_id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetails'
+        '400':
+          description: Invalid conversation ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Fetch failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/add-message:
+    post:
+      tags: [Client]
+      summary: Add a human-authored message to a conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMessageRequest'
+      responses:
+        '200':
+          description: Message added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: Message added successfully
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Add failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/conversations/link:
+    post:
+      tags: [Client]
+      summary: Link conversations to an auth user
+      security:
+        - AuthorizationHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkAuthUserConversationsRequest'
+      responses:
+        '200':
+          description: Conversations linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkConversationsResponse'
+        '400':
+          description: Invalid request body or link input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v2/client/conversations/tracking:
+    patch:
+      tags: [Client]
+      summary: Update agent tracking fields for an assigned conversation
+      security:
+        - AuthorizationHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTrackingRequest'
+      responses:
+        '200':
+          description: Tracking updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateTrackingResponse'
+        '400':
+          description: Invalid request body or no fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Agent or admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Conversation assignment not found for agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>smart-chat API Docs</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f4f1ea;
+      color: #1f2937;
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .topbar {
+      background: linear-gradient(120deg, #103c53, #1f6f78 60%, #e3b23c);
+      color: #fff8e7;
+      padding: 20px 24px;
+      box-shadow: 0 10px 30px rgba(16, 60, 83, 0.18);
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .topbar p {
+      margin: 8px 0 0;
+      max-width: 760px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>smart-chat OpenAPI</h1>
+    <p>Interactive API reference generated from the embedded OpenAPI contract served at <code>/openapi.yaml</code>.</p>
+  </div>
+  <redoc spec-url="/openapi.yaml"></redoc>
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+</body>
+</html>

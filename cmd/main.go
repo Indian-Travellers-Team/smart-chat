@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,12 +10,15 @@ import (
 	"smart-chat/auth"
 	"smart-chat/cache"
 	"smart-chat/config"
+	apidocs "smart-chat/docs"
 	"smart-chat/external/indian_travellers"
 	"smart-chat/external/notification"
+	"smart-chat/internal/authservice/zitadel"
 	middleware "smart-chat/internal/middlewares"
 	"smart-chat/internal/models"
 	"smart-chat/internal/routes"
 	"smart-chat/internal/services/analytics"
+	authUserConversation "smart-chat/internal/services/auth_user_conversation"
 	"smart-chat/internal/services/conversation"
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/human"
@@ -47,12 +51,24 @@ func main() {
 	}
 
 	// Perform other migrations (if necessary)
-	err = db.AutoMigrate(&models.User{}, &models.Session{}, &models.Conversation{}, &models.MessagePair{}, &models.FunctionCall{}, &models.Button{}, &models.ConvAnalysis{})
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Session{},
+		&models.Conversation{},
+		&models.MessagePair{},
+		&models.FunctionCall{},
+		&models.Button{},
+		&models.ConvAnalysis{},
+		&models.AuthUserConversation{},
+	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
 	router := gin.Default()
+	if err := apidocs.RegisterRoutes(router, cfg.SwaggerUsername, cfg.SwaggerPassword); err != nil {
+		log.Fatalf("Failed to register API docs routes: %v", err)
+	}
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
@@ -87,11 +103,16 @@ func main() {
 	conversationHistoryService := convHistory.NewConvHistoryService(db)
 	analyticsService := analytics.NewAnalyticsService(db)
 	us := userService.NewUserService(db)
+	authUserConversationService := authUserConversation.NewService(db)
+	tokenValidator, err := zitadel.NewService(context.Background(), zitadel.ZitadelConfig{AuthServiceBaseURL: cfg.AuthServiceBaseURL})
+	if err != nil {
+		log.Fatalf("Failed to initialize auth service token validator: %v", err)
+	}
 
 	humanService := human.NewHumanService(db)
 
 	clientGroupV2 := v2.Group("/client")
-	routes.ClientRoutes(clientGroupV2, conversationHistoryService, analyticsService, us, humanService, jobService, slackService)
+	routes.ClientRoutes(clientGroupV2, conversationHistoryService, analyticsService, us, humanService, jobService, slackService, authUserConversationService, tokenValidator)
 
 	// Start cron jobs
 	//cron_jobs.StartCronJobs(db)

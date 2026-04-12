@@ -71,6 +71,7 @@ func (chs *ConvHistoryService) ListConversations(offset, limit int, sortOrder st
 
 	var conversations []models.Conversation
 	err := dbQuery.
+		Distinct("conversations.id", "conversations.created_at", "conversations.session_id").
 		Select("conversations.id", "conversations.created_at", "conversations.session_id").
 		Preload("Session", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "source", "user_id")
@@ -100,7 +101,7 @@ func (chs *ConvHistoryService) CountConversations(specs ...spec.Specification) (
 	}
 
 	var count int64
-	if err := dbQuery.Count(&count).Error; err != nil {
+	if err := dbQuery.Distinct("conversations.id").Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

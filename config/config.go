@@ -41,8 +41,11 @@ func Load() *Config {
 		SecretToken:            "secret_token",
 		IndianTeavellersURL:    "http://127.0.0.1:8000",
 		NotificationServiceURL: "http://127.0.0.1:8001",
+		AuthServiceBaseURL:     "http://127.0.0.1:8002",
 		SlackNotificationURL:   "https://hooks.slack.com/services/xx",
 		SlackAlertURL:          "https://hooks.slack.com/services/xx",
+		SwaggerUsername:        "swagger",
+		SwaggerPassword:        "swagger",
 	}
 	if os.Getenv("SMART_CHAT_ENV") == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -80,8 +83,11 @@ func Load() *Config {
 		config.SecretToken = getParameter("WASecretToken")
 		config.IndianTeavellersURL = getParameter("IndianTeavellersURL")
 		config.NotificationServiceURL = getParameter("NotificationServiceURL")
+		config.AuthServiceBaseURL = getParameter("AuthServiceBaseURL")
 		config.SlackNotificationURL = getParameter("SLACK_NOTIFICATION_URL")
 		config.SlackAlertURL = getParameter("SLACK_ALERT_URL")
+		config.SwaggerUsername = getParameter("SwaggerUsername")
+		config.SwaggerPassword = getParameter("SwaggerPassword")
 	} else {
 		gin.SetMode(gin.DebugMode)
 		return &Config{
@@ -97,8 +103,11 @@ func Load() *Config {
 			SecretToken:            "secret_token",
 			IndianTeavellersURL:    "http://127.0.0.1:8000",
 			NotificationServiceURL: "http://127.0.0.1:8001",
+			AuthServiceBaseURL:     "http://127.0.0.1:8002",
 			SlackNotificationURL:   "https://hooks.slack.com/services/xx",
 			SlackAlertURL:          "https://hooks.slack.com/services/xx",
+			SwaggerUsername:        "swagger",
+			SwaggerPassword:        "swagger",
 		}
 	}
 

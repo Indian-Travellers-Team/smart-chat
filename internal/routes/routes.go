@@ -48,7 +48,7 @@ func ClientRoutes(
 	tokenValidator zitadel.TokenValidator,
 ) {
 	group.POST("/login", handlers.ClientAdminLoginHandler())
-	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService))
+	group.GET("/conversation/:id", handlers.GetConversationByIDHandler(convHistoryService, authUserConversationService, tokenValidator))
 	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService, authUserConversationService, tokenValidator))
 	group.GET("/analytics/dashboard/conversations-summary", handlers.GetDashboardConversationSummaryHandler(analyticsService))
 	group.GET("/analytics/conversations/last-30-days", handlers.GetConversationsCountLast30DaysHandler(analyticsService))

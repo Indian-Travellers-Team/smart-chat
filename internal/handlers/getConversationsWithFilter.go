@@ -137,16 +137,21 @@ func GetConversationsWithFiltersHandler(
 			return
 		}
 
-		conversationIDs := make([]uint, 0, len(conversations))
-		for _, conv := range conversations {
-			conversationIDs = append(conversationIDs, conv.ID)
-		}
+		// For admin users, skip the auth_user_conversation lookup entirely — all
+		// conversations are already returned and assigned-agent data is not required.
+		var assignedAgentByConversation map[uint]*authUserConversation.AgentUser
+		if !isAdmin {
+			conversationIDs := make([]uint, 0, len(conversations))
+			for _, conv := range conversations {
+				conversationIDs = append(conversationIDs, conv.ID)
+			}
 
-		assignedAgentByConversation, err := authUserConversationService.GetAssignedAgentsByConversationIDs(conversationIDs)
-		if err != nil {
-			log.Printf("Error fetching assigned agents: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching assigned agents"})
-			return
+			assignedAgentByConversation, err = authUserConversationService.GetAssignedAgentsByConversationIDs(conversationIDs)
+			if err != nil {
+				log.Printf("Error fetching assigned agents: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching assigned agents"})
+				return
+			}
 		}
 
 		// 8. Format the response.

@@ -17,7 +17,14 @@ func SetupTestDB() (*gorm.DB, func()) {
 	}
 
 	// Migrate the schema
-	if err := db.AutoMigrate(&models.User{}, &models.Session{}, &models.Conversation{}, &models.MessagePair{}, &models.FunctionCall{}); err != nil {
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Session{},
+		&models.Conversation{},
+		&models.MessagePair{},
+		&models.FunctionCall{},
+		&models.AuthUserConversation{},
+	); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)
 	}
 

@@ -15,6 +15,11 @@ type Service struct {
 	db *gorm.DB
 }
 
+type AgentUser struct {
+	UserID uint    `json:"user_id" gorm:"column:user_id"`
+	Name   *string `json:"name" gorm:"column:name"`
+}
+
 func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
@@ -97,6 +102,23 @@ func (s *Service) IsAdminByZitadelUserID(zitadelUserID string) (bool, error) {
 	}
 
 	return strings.EqualFold(strings.TrimSpace(row.RoleName), "ADMIN"), nil
+}
+
+func (s *Service) ListAgentsAndAdmins() ([]AgentUser, error) {
+	agents := make([]AgentUser, 0)
+
+	err := s.db.
+		Table("auth_users").
+		Select("auth_users.user_id, auth_users.name").
+		Joins("JOIN auth_roles ON auth_roles.role_id = auth_users.role_id").
+		Where("UPPER(auth_roles.name) IN ?", []string{"ADMIN", "AGENT"}).
+		Order("auth_users.name ASC, auth_users.user_id ASC").
+		Find(&agents).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return agents, nil
 }
 
 func dedupeUintIDs(ids []uint) []uint {

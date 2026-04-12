@@ -52,6 +52,7 @@ func ClientRoutes(
 	group.GET("/conversations", handlers.GetConversationsWithFiltersHandler(convHistoryService))
 	group.GET("/analytics/dashboard/conversations-summary", handlers.GetDashboardConversationSummaryHandler(analyticsService))
 	group.GET("/analytics/conversations/last-30-days", handlers.GetConversationsCountLast30DaysHandler(analyticsService))
+	group.GET("/agents", handlers.GetAgentsHandler(authUserConversationService, tokenValidator))
 	group.GET("/userdetails", handlers.ClientUserDetailsHandler(us))
 	group.POST("/add-message", handlers.AddMessageHandler(humanService, jobService, slackService))
 	group.POST("/conversations/link", handlers.LinkAuthUserConversationsHandler(authUserConversationService, tokenValidator))

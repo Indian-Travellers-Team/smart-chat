@@ -1,23 +1,63 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"smart-chat/internal/authservice/zitadel"
 	"smart-chat/internal/constants"
 	convHistory "smart-chat/internal/services/conversation_history"
 	"smart-chat/internal/services/conversation_history/specification"
+	authUserConversation "smart-chat/internal/services/auth_user_conversation"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // GetConversationsWithFiltersHandler fetches conversations with optional filters and pagination.
-func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryService) gin.HandlerFunc {
+func GetConversationsWithFiltersHandler(
+	historyService *convHistory.ConvHistoryService,
+	authUserConversationService *authUserConversation.Service,
+	tokenValidator zitadel.TokenValidator,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var specs []specification.Specification
+
+		rawToken := tokenFromAuthorizationHeader(c.GetHeader("Authorization"))
+		if rawToken == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization Required"})
+			return
+		}
+
+		validatedUser, err := tokenValidator.ValidateToken(c.Request.Context(), rawToken)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid access token"})
+			return
+		}
+
+		if validatedUser == nil || validatedUser.ID == nil || strings.TrimSpace(*validatedUser.ID) == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid access token"})
+			return
+		}
+
+		principal, err := authUserConversationService.GetAuthPrincipalByZitadelUserID(*validatedUser.ID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "auth user not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve auth user"})
+			return
+		}
+
+		isAdmin := strings.EqualFold(strings.TrimSpace(principal.RoleName), "ADMIN")
+		if !isAdmin {
+			specs = append(specs, specification.ByAssignedAuthUser{AuthUserID: principal.UserID})
+		}
 
 		// 1. Handle optional date range filters.
 		startDateStr, endDateStr := c.Query("startdate"), c.Query("enddate")
@@ -97,15 +137,36 @@ func GetConversationsWithFiltersHandler(historyService *convHistory.ConvHistoryS
 			return
 		}
 
+		conversationIDs := make([]uint, 0, len(conversations))
+		for _, conv := range conversations {
+			conversationIDs = append(conversationIDs, conv.ID)
+		}
+
+		assignedAgentByConversation, err := authUserConversationService.GetAssignedAgentsByConversationIDs(conversationIDs)
+		if err != nil {
+			log.Printf("Error fetching assigned agents: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching assigned agents"})
+			return
+		}
+
 		// 8. Format the response.
 		formattedConversations := make([]gin.H, 0, len(conversations))
 		for _, conv := range conversations {
+			assignedAgent := any(nil)
+			if agent, ok := assignedAgentByConversation[conv.ID]; ok && agent != nil {
+				assignedAgent = gin.H{
+					"user_id": agent.UserID,
+					"name":    agent.Name,
+				}
+			}
+
 			formattedConversations = append(formattedConversations, gin.H{
-				"id":        conv.ID,
-				"createdAt": conv.CreatedAt.Format(time.RFC3339),
-				"username":  conv.Session.User.Name,
-				"mobile":    conv.Session.User.Mobile,
-				"source":    conv.Session.Source,
+				"id":             conv.ID,
+				"createdAt":      conv.CreatedAt.Format(time.RFC3339),
+				"username":       conv.Session.User.Name,
+				"mobile":         conv.Session.User.Mobile,
+				"source":         conv.Session.Source,
+				"assigned_agent": assignedAgent,
 			})
 		}
 

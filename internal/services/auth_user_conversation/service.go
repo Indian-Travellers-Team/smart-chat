@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"smart-chat/internal/models"
 
@@ -18,6 +19,11 @@ type Service struct {
 type AgentUser struct {
 	UserID uint    `json:"user_id" gorm:"column:user_id"`
 	Name   *string `json:"name" gorm:"column:name"`
+}
+
+type AuthPrincipal struct {
+	UserID   uint
+	RoleName string
 }
 
 func NewService(db *gorm.DB) *Service {
@@ -78,22 +84,7 @@ func (s *Service) LinkConversations(authUserID uint, conversationIDs []uint) (in
 }
 
 func (s *Service) IsAdminByZitadelUserID(zitadelUserID string) (bool, error) {
-	zitadelUserID = strings.TrimSpace(zitadelUserID)
-	if zitadelUserID == "" {
-		return false, errors.New("zitadel user id is required")
-	}
-
-	type adminLookup struct {
-		RoleName string `gorm:"column:name"`
-	}
-
-	var row adminLookup
-	err := s.db.
-		Table("auth_users").
-		Select("auth_roles.name").
-		Joins("JOIN auth_roles ON auth_roles.role_id = auth_users.role_id").
-		Where("auth_users.zitadel_user_id = ?", zitadelUserID).
-		Take(&row).Error
+	principal, err := s.GetAuthPrincipalByZitadelUserID(zitadelUserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
@@ -101,7 +92,32 @@ func (s *Service) IsAdminByZitadelUserID(zitadelUserID string) (bool, error) {
 		return false, err
 	}
 
-	return strings.EqualFold(strings.TrimSpace(row.RoleName), "ADMIN"), nil
+	return strings.EqualFold(strings.TrimSpace(principal.RoleName), "ADMIN"), nil
+}
+
+func (s *Service) GetAuthPrincipalByZitadelUserID(zitadelUserID string) (*AuthPrincipal, error) {
+	zitadelUserID = strings.TrimSpace(zitadelUserID)
+	if zitadelUserID == "" {
+		return nil, errors.New("zitadel user id is required")
+	}
+
+	type principalLookup struct {
+		UserID   uint   `gorm:"column:user_id"`
+		RoleName string `gorm:"column:name"`
+	}
+
+	var row principalLookup
+	err := s.db.
+		Table("auth_users").
+		Select("auth_users.user_id, auth_roles.name").
+		Joins("JOIN auth_roles ON auth_roles.role_id = auth_users.role_id").
+		Where("auth_users.zitadel_user_id = ?", zitadelUserID).
+		Take(&row).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &AuthPrincipal{UserID: row.UserID, RoleName: row.RoleName}, nil
 }
 
 func (s *Service) ListAgentsAndAdmins() ([]AgentUser, error) {
@@ -119,6 +135,41 @@ func (s *Service) ListAgentsAndAdmins() ([]AgentUser, error) {
 	}
 
 	return agents, nil
+}
+
+func (s *Service) GetAssignedAgentsByConversationIDs(conversationIDs []uint) (map[uint]*AgentUser, error) {
+	result := make(map[uint]*AgentUser)
+	if len(conversationIDs) == 0 {
+		return result, nil
+	}
+
+	type assignedAgentRow struct {
+		ConversationID uint      `gorm:"column:conversation_id"`
+		UserID         uint      `gorm:"column:user_id"`
+		Name           *string   `gorm:"column:name"`
+		CreatedAt      time.Time `gorm:"column:created_at"`
+	}
+
+	rows := make([]assignedAgentRow, 0)
+	err := s.db.
+		Table("auth_user_conversation").
+		Select("auth_user_conversation.conversation_id, auth_users.user_id, auth_users.name, auth_user_conversation.created_at").
+		Joins("JOIN auth_users ON auth_users.user_id = auth_user_conversation.auth_user_id").
+		Where("auth_user_conversation.conversation_id IN ?", conversationIDs).
+		Order("auth_user_conversation.conversation_id ASC, auth_user_conversation.created_at ASC").
+		Find(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range rows {
+		if _, exists := result[row.ConversationID]; exists {
+			continue
+		}
+		result[row.ConversationID] = &AgentUser{UserID: row.UserID, Name: row.Name}
+	}
+
+	return result, nil
 }
 
 func dedupeUintIDs(ids []uint) []uint {

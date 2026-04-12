@@ -23,6 +23,8 @@ func SetupTestDB() (*gorm.DB, func()) {
 		&models.Conversation{},
 		&models.MessagePair{},
 		&models.FunctionCall{},
+		&models.AuthRole{},
+		&models.AuthUser{},
 		&models.AuthUserConversation{},
 	); err != nil {
 		log.Fatalf("failed to migrate database: %v", err)

@@ -5,30 +5,146 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
+	"strings"
+	"sync"
 	"time"
 
 	"smart-chat/config"
+)
+
+const (
+	defaultRequestTimeout = 60 * time.Second
+	localRequestTimeout   = 10 * time.Second
 )
 
 // Client wraps the HTTP client and the base URL for the Indian Travellers API.
 type Client struct {
 	baseURL    string
 	httpClient *http.Client
+	timeout    time.Duration
+	useLocal   bool
+
+	cacheMu sync.RWMutex
+	cache   map[string]cacheEntry
 }
 
 // NewClient initializes a new Indian Travellers API client using the provided configuration.
 func NewClient(cfg *config.Config) *Client {
-	return &Client{
-		baseURL: cfg.IndianTeavellersURL,
-		httpClient: &http.Client{
-			Timeout: time.Second * 60,
-		},
+	baseURL := strings.TrimSpace(cfg.IndianTeavellersURL)
+	if baseURL == "" {
+		baseURL = "http://127.0.0.1:8000"
 	}
+	useLocal := cfg.EnableLocalIndianTravellers
+
+	isLocal := isLoopbackBaseURL(baseURL)
+	timeout := defaultRequestTimeout
+	if useLocal && isLocal {
+		timeout = localRequestTimeout
+	}
+
+	transport := http.DefaultTransport
+	if useLocal {
+		transport = &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   500 * time.Millisecond,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   50,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   2 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			DisableCompression:    isLocal,
+		}
+	}
+
+	cache := make(map[string]cacheEntry)
+	if !useLocal {
+		cache = nil
+	}
+
+	return &Client{
+		baseURL: baseURL,
+		httpClient: &http.Client{
+			Timeout:   timeout,
+			Transport: transport,
+		},
+		timeout:  timeout,
+		useLocal: useLocal,
+		cache:    cache,
+	}
+}
+
+func isLoopbackBaseURL(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := parsed.Hostname()
+	if host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // GetPackageList fetches the list of packages from the external API.
 func (c *Client) GetPackageList() ([]Package, error) {
+	if c.useLocal {
+		return c.getPackageListLocal()
+	}
+	return c.getPackageListLegacy()
+}
+
+// GetPackageDetails fetches the details of a specific package by ID.
+func (c *Client) GetPackageDetails(packageID int) (*PackageDetails, error) {
+	if c.useLocal {
+		return c.getPackageDetailsLocal(packageID)
+	}
+	return c.getPackageDetailsLegacy(packageID)
+}
+
+// CreateUserInitialQuery makes a POST request to create a user initial query.
+func (c *Client) CreateUserInitialQuery(threadID string, mobile string, noOfPeople int, preferredDestination string, preferredDate string) (*ToolResponse, error) {
+	if c.useLocal {
+		return c.createUserInitialQueryLocal(threadID, mobile, noOfPeople, preferredDestination, preferredDate)
+	}
+	return c.createUserInitialQueryLegacy(threadID, mobile, noOfPeople, preferredDestination, preferredDate)
+}
+
+// CreateUserFinalBooking makes a POST request to create the user final booking.
+func (c *Client) CreateUserFinalBooking(threadID string, tripID int) (*ToolResponse, error) {
+	if c.useLocal {
+		return c.createUserFinalBookingLocal(threadID, tripID)
+	}
+	return c.createUserFinalBookingLegacy(threadID, tripID)
+}
+
+// GetUpcomingTrips fetches the upcoming trips for a specific package by its ID.
+func (c *Client) GetUpcomingTrips(packageID int) (*UpcomingTripsResponseInternal, error) {
+	if c.useLocal {
+		return c.getUpcomingTripsLocal(packageID)
+	}
+	return c.getUpcomingTripsLegacy(packageID)
+}
+
+// GetWorkflow fetches the workflow details for a given workflow ID.
+func (c *Client) GetWorkflow(workflowID int) (*WorkflowResponse, error) {
+	if c.useLocal {
+		return c.getWorkflowLocal(workflowID)
+	}
+	return c.getWorkflowLegacy(workflowID)
+}
+
+func (c *Client) getPackageListLegacy() ([]Package, error) {
 	url := fmt.Sprintf("%s/api/packages/", c.baseURL)
 	log.Println(url)
 	resp, err := c.httpClient.Get(url)
@@ -49,8 +165,7 @@ func (c *Client) GetPackageList() ([]Package, error) {
 	return packages, nil
 }
 
-// GetPackageDetails fetches the details of a specific package by ID.
-func (c *Client) GetPackageDetails(packageID int) (*PackageDetails, error) {
+func (c *Client) getPackageDetailsLegacy(packageID int) (*PackageDetails, error) {
 	url := fmt.Sprintf("%s/api/packages/%d", c.baseURL, packageID)
 	log.Println(url)
 	resp, err := c.httpClient.Get(url)
@@ -71,8 +186,7 @@ func (c *Client) GetPackageDetails(packageID int) (*PackageDetails, error) {
 	return &packageDetails, nil
 }
 
-// CreateUserInitialQuery makes a POST request to create a user initial query.
-func (c *Client) CreateUserInitialQuery(threadID string, mobile string, noOfPeople int, preferredDestination string, preferredDate string) (*ToolResponse, error) {
+func (c *Client) createUserInitialQueryLegacy(threadID string, mobile string, noOfPeople int, preferredDestination string, preferredDate string) (*ToolResponse, error) {
 	requestPayload := UserInitialQueryRequest{
 		ThreadID:             threadID,
 		Mobile:               mobile,
@@ -105,8 +219,7 @@ func (c *Client) CreateUserInitialQuery(threadID string, mobile string, noOfPeop
 	return &response, nil
 }
 
-// CreateUserFinalBooking makes a POST request to create the user final booking.
-func (c *Client) CreateUserFinalBooking(threadID string, tripID int) (*ToolResponse, error) {
+func (c *Client) createUserFinalBookingLegacy(threadID string, tripID int) (*ToolResponse, error) {
 	requestPayload := CreateUserFinalBookingRequest{
 		ThreadID: threadID,
 		TripID:   tripID,
@@ -136,8 +249,7 @@ func (c *Client) CreateUserFinalBooking(threadID string, tripID int) (*ToolRespo
 	return &response, nil
 }
 
-// GetUpcomingTrips fetches the upcoming trips for a specific package by its ID.
-func (c *Client) GetUpcomingTrips(packageID int) (*UpcomingTripsResponseInternal, error) {
+func (c *Client) getUpcomingTripsLegacy(packageID int) (*UpcomingTripsResponseInternal, error) {
 	apiURL := fmt.Sprintf("%s/api/v1/web/upcoming-trips/%d/", c.baseURL, packageID)
 	resp, err := c.httpClient.Get(apiURL)
 	if err != nil {
@@ -170,8 +282,7 @@ func (c *Client) GetUpcomingTrips(packageID int) (*UpcomingTripsResponseInternal
 	return &internalTrips, nil
 }
 
-// GetWorkflow fetches the workflow details for a given workflow ID.
-func (c *Client) GetWorkflow(workflowID int) (*WorkflowResponse, error) {
+func (c *Client) getWorkflowLegacy(workflowID int) (*WorkflowResponse, error) {
 	apiURL := fmt.Sprintf("%s/api/agent/workflow/%d/", c.baseURL, workflowID)
 	log.Println(apiURL)
 	resp, err := c.httpClient.Get(apiURL)

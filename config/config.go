@@ -51,7 +51,7 @@ func Load() *Config {
 		SlackAlertURL:          "https://hooks.slack.com/services/xx",
 		SwaggerUsername:        "swagger",
 		SwaggerPassword:        "swagger",
-		EnableLocalIndianTravellers: false,
+		EnableLocalIndianTravellers: true,
 	}
 	if os.Getenv("SMART_CHAT_ENV") == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -98,8 +98,8 @@ func Load() *Config {
 		enableLocalStr := getParameter("ENABLE_LOCAL_INDIAN_TRAVELLERS")
 		enableLocal, err := strconv.ParseBool(enableLocalStr)
 		if err != nil {
-			log.Printf("Invalid ENABLE_LOCAL_INDIAN_TRAVELLERS value %q in SSM, defaulting to false", enableLocalStr)
-			enableLocal = false
+			log.Printf("Invalid ENABLE_LOCAL_INDIAN_TRAVELLERS value %q in SSM, defaulting to true", enableLocalStr)
+			enableLocal = true
 		}
 		config.EnableLocalIndianTravellers = enableLocal
 	} else {
@@ -122,7 +122,7 @@ func Load() *Config {
 			SlackAlertURL:          "https://hooks.slack.com/services/xx",
 			SwaggerUsername:        "swagger",
 			SwaggerPassword:        "swagger",
-			EnableLocalIndianTravellers: false,
+			EnableLocalIndianTravellers: true,
 		}
 	}
 

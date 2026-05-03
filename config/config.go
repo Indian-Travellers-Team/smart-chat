@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -23,8 +24,12 @@ type Config struct {
 	SecretToken            string
 	IndianTeavellersURL    string
 	NotificationServiceURL string
+	AuthServiceBaseURL     string
 	SlackNotificationURL   string
 	SlackAlertURL          string
+	SwaggerUsername        string
+	SwaggerPassword        string
+	EnableLocalIndianTravellers bool
 }
 
 func Load() *Config {
@@ -46,6 +51,7 @@ func Load() *Config {
 		SlackAlertURL:          "https://hooks.slack.com/services/xx",
 		SwaggerUsername:        "swagger",
 		SwaggerPassword:        "swagger",
+		EnableLocalIndianTravellers: false,
 	}
 	if os.Getenv("SMART_CHAT_ENV") == "prod" {
 		gin.SetMode(gin.ReleaseMode)
@@ -88,6 +94,14 @@ func Load() *Config {
 		config.SlackAlertURL = getParameter("SLACK_ALERT_URL")
 		config.SwaggerUsername = getParameter("SwaggerUsername")
 		config.SwaggerPassword = getParameter("SwaggerPassword")
+
+		enableLocalStr := getParameter("ENABLE_LOCAL_INDIAN_TRAVELLERS")
+		enableLocal, err := strconv.ParseBool(enableLocalStr)
+		if err != nil {
+			log.Printf("Invalid ENABLE_LOCAL_INDIAN_TRAVELLERS value %q in SSM, defaulting to false", enableLocalStr)
+			enableLocal = false
+		}
+		config.EnableLocalIndianTravellers = enableLocal
 	} else {
 		gin.SetMode(gin.DebugMode)
 		return &Config{
@@ -108,6 +122,7 @@ func Load() *Config {
 			SlackAlertURL:          "https://hooks.slack.com/services/xx",
 			SwaggerUsername:        "swagger",
 			SwaggerPassword:        "swagger",
+			EnableLocalIndianTravellers: false,
 		}
 	}
 
